@@ -1,0 +1,3 @@
+# mortimer
+
+analyze log gobs
