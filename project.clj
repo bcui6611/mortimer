@@ -1,6 +1,10 @@
 (defproject mortimer "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.1"]])
+  :main mortimer.web
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [incanter "1.5.1"]
+                 [aleph "0.3.0-rc1"]
+                 [cheshire "5.2.0"]
+                 [compojure "1.1.5"]
+                 [ring/ring-devel "1.2.0-RC1"]
+                 [org.clojure/tools.cli "0.2.2"]
+                 ])

@@ -1,30 +1,7 @@
 (ns mortimer.analyze
-  (:import java.util.zip.ZipFile)
   (:require [clojure.java.io :as io]
+            [mortimer.zip :as zip]
             [clojure.string :as string]))
-
-(def test-201-dir "/Users/apage43/dex/couchbase_test_results/201s")
-(def test-201-fil "/Users/apage43/dex/couchbase_test_results/201s/cbcollect_info.2.0.1.node1.zip")
-
-;; General ZIP utilities
-
-(defn open-zip [file]
-  (ZipFile. (io/file file)))
-
-(defn zip-entries [zipfile]
-  (enumeration-seq (.entries zipfile)))
-
-(defn suffixed [zipfile suffix]
-  (filter #(.endsWith (.getName %) suffix) (zip-entries zipfile)))
-
-(defn suffixed-1 [zipfile suffix] (first (suffixed zipfile suffix)))
-
-(defn zipslurp [zipfile entry]
-  (slurp (.getInputStream zipfile entry)))
-
-(defn try-slurp [zipfile suffix]
-  (some->> (suffixed-1 zipfile suffix)
-           (zipslurp zipfile)))
 
 ;; Collected info mangling
 
@@ -44,10 +21,36 @@
                    (into {}))]
     files))
 
+(defn stats-kv [lines]
+  (into {} (for [line lines]
+             (let [[_ k v] (re-matches #"([^\s]+)\s+(.*)" line)]
+               [(keyword k) 
+                (if (re-matches #"[\-\d.]+" v)
+                  (read-string v) v)]))))
+
+(defn stats-parse [input-stream]
+  (with-open [reader (io/reader input-stream)]
+      (loop [lines (line-seq reader)
+             stats {}]
+        (if-let [line (first lines)]
+          (if-let [[_ bucket] (re-matches #"^.*Stats for bucket \"(.*)\".*$" line)]
+            (let [statlines (take-while (complement empty?) (rest lines))]
+               (recur 
+                 (drop (count statlines) lines)
+                 (update-in stats [bucket]
+                            #(conj (or % [])
+                                   (stats-kv statlines)))))
+            (recur (rest lines) stats))
+          stats))))
+
 (comment
   (use 'clojure.pprint)
+  (def tdir "/Users/apage43/funs/")
+  (def tfn (str tdir "cbse614.zip"))
+  (def tz (open-zip tfn))
+  (.close tz)
 
-  (with-open [collectinfo (open-zip test-201-fil)]
+  (with-open [collectinfo (open-zip tfn)]
     (let [inilog-data (try-slurp collectinfo "/ini.log")
           chopped (ini-log-chop inilog-data)
           runtime (chopped "runtime.ini") ]
