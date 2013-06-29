@@ -1,43 +1,52 @@
 <!DOCTYPE html>
 <html ng-app="mortimer">
-  <head>
-    <title>stats</title>
-    <link rel="stylesheet" type="text/css" href="bootstrap.css">
-    <link rel="stylesheet/less" type="text/css" href="app.less">
-  </head>
-  <body>
-    <div class="container-fluid" ng-controller="DataCtrl">
-      <div class="row-fluid">
-        <div class="span2" id="lthing">
-          <ul><li ng-repeat="stat in stats"><a ng-click="dochart(stat)">{{stat}}</a></li></ul>
+<head>
+  <title>stats</title>
+  <link rel="stylesheet" type="text/css" href="bootstrap.css">
+  <link rel="stylesheet" type="text/css" href="components/font-awesome/css/font-awesome.css">
+  <link rel="stylesheet/less" type="text/css" href="app.less">
+</head>
+<body>
+  <div class="container-fluid" ng-controller="DataCtrl">
+    <div class="row-fluid">
+      <div class="span2" id="lthing">
+        <form class="form-search">
+          <input class="input-medium search-query" type="text" ng-model="statfilter"/>
+        </form>
+        <ul><li ng-repeat="stat in filteredStats()">
+          <a ng-click="dochart(stat)">{{stat}}</a> <a class="dyx" ng-click="dochart(stat+':derivative')">dy/dx</a>
+        </li></ul>
+      </div>
+      <div class="span10" id="rthing">
+        <div>
+          Files
+          <div class="btn-group">
+            <button class="btn" ng-class="{'active': activeFiles[i]}" ng-click="toggle('activeFiles', i)"
+            ng-repeat="i in files">{{i}}</button>
+          </div>
         </div>
-        <div class="span10" id="rthing">
-          <label>
-            Files
-            <div class="btn-group">
-              <button class="btn" 
-                ng-class="{'active': activeFiles[i]}"
-                ng-click="toggle('activeFiles', i)"
-                ng-repeat="i in files">{{i}}</button>
-            </div>
-          </label>
-          <label>
-            Buckets
-            <div class="btn-group">
-              <button class="btn" ng-repeat="i in buckets">{{i}}</button>
-            </div>
-          </label>
-          <div id="charthaver">
-            <div id="chart">
-            </div>
+        <div>
+          Buckets
+          <div class="btn-group">
+            <button class="btn" ng-class="{'active': activeBuckets[i]}" ng-click="toggle('activeBuckets', i)" ng-repeat="i in buckets">{{i}}</button>
+          </div>
+        </div>
+        <div class="pull-right loader" ng-class="{'notloading': !updating}">
+          <i class="icon-refresh icon-spin"></i>
+        </div>
+        <div id="charthaver">
+          <div id="chart">
           </div>
         </div>
       </div>
     </div>
-    <script src="less.js"></script>
-    <script src="components/angular/angular.min.js"></script>
-    <script src="components/lodash/dist/lodash.min.js"></script>
-    <script src="dygraph-combined.js"></script>
-    <script src="app.js"></script>
-  </body>
+  </div>
+  <script src="less.js"></script>
+  <script src="components/angular/angular.min.js"></script>
+  <script src="components/lodash/dist/lodash.min.js"></script>
+  <script src="components/fuzzy/fuzzy-min.js"></script>
+  <script src="dygraph-combined.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="app.js"></script>
+</body>
 </html>

@@ -9,6 +9,7 @@
             [cheshire.core :as json]
             [ring.util.response :as response]
             [compojure.handler :refer [api]]
+            [incanter.optimize :as opt]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [aleph.http :refer [start-http-server
                                 wrap-ring-handler]]))
@@ -24,6 +25,9 @@
         (if-let [els (seq (remove empty? els))]
           els :all)) :all) :all))
 
+(def statopts
+  {"derivative" opt/derivative})
+
 (defroutes app-routes
   (GET "/files" [] (json-response (mdb/list-files)))
   (GET "/buckets" [] (json-response (mdb/list-buckets)))
@@ -32,17 +36,18 @@
                  buckets :buckets
                  res :res
                  files :files} :params}
-       (let [statsets (mdb/across (delist files)
+       (let [[stat opt] (s/split stat #":")
+             optf (statopts opt identity)
+             statsets (mdb/across (delist files)
                                   (delist buckets))
              res (read-string (or res "1"))
              combined (mdb/combined (keyword stat) statsets)
              [mint maxt] (:interval combined)
-             f (:func combined)]
+             f (optf (:func combined))]
          (json-response
            {:interval [mint maxt]
             :points (for [x (range mint (inc maxt) res)]
-                     [(* x 1000) (f x)])
-            })))
+                     [(* x 1000) (f x)])})))
   (GET "/" [] {:status 302
                :headers {"location" "/index.html"}})
   (route/resources "/")

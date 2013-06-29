@@ -10,7 +10,7 @@
   (keys @db))
 
 (defn list-buckets []
-  (or (mapcat keys (vals @db)) []))
+  (distinct (or (mapcat keys (vals @db)) [])))
 
 ;; find only stats that are numbers
 (defn list-stats []

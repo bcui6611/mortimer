@@ -20,19 +20,31 @@ function DataCtrl($scope, $http) {
     } else {
       $scope[tgl][item] = true;
     }
+    dbmakechart();
   };
 
+  $scope.statfilter = '';
+  $scope.filteredStats = function() {
+    var stats = $scope.stats;
+    if($scope.statfilter == '') {
+      return stats;
+    }
+    var results = fuzzy.filter($scope.statfilter, stats);
+    return results.map(function(el) { return el.string; });
+  }
+
   function toCS(ob) {
-    _(ob).keys().join(',')
+    return _(ob).keys().join(',');
   }
   function makechart() {
+    console.log('charting...')
     $scope.updating = true;
     var stat = $scope.activeStat;
     $http.get('/stat', {params: {
       stat: stat,
       res: 10,
-//      buckets: toCS($scope.activeBuckets),
-//      files: toCS($scope.activeFiles)
+      buckets: toCS($scope.activeBuckets),
+      files: toCS($scope.activeFiles)
     }}).
     success(function(data) {
       var points = data.points;
@@ -41,13 +53,23 @@ function DataCtrl($scope, $http) {
       }
       var g = new Dygraph(chart, points,
         {labels: ['Time', stat],
-          digitsAfterDecimal: 0});
+         digitsAfterDecimal: 0,
+         axes: {
+           y: {
+             valueFormatter: d3.format('.2s'),
+             axisLabelFormatter: d3.format('.2s')
+           }
+         }
+        });
       g.resize();
+      dbmakechart = _.once(makechart);
+      $scope.updating = false;
     });
   }
-  makechart();
+  var dbmakechart = _.once(makechart);
   $scope.dochart = function(stat) {
     $scope.activeStat = stat;
-    makechart();
+    dbmakechart();
   }
+  dbmakechart();
 }
