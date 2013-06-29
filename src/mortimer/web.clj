@@ -19,17 +19,28 @@
   (-> (response/response (json/generate-string obj))
       (response/content-type "application/json; charset=utf-8")))
 
-(defn delist [lstring]
+(defn delist 
+  "Takes a string of the form \"thing1, thing2, thing3\", and returns
+   [\"thing1\" \"thing2\" \"thing3\"], or :all if the string contains
+   only whitespace and commas."
+  [lstring]
   (if lstring
     (if-let [els (s/split lstring #",")]
       (let [els (map s/trim els)]
         (if-let [els (seq (remove empty? els))]
           els :all)) :all) :all))
 
+;; Here we can provide pseudo-stats.
+;; a key in this map allows requesting of statname:key,
+;; like cmd_get:derivative
 (def statopts
   {"derivative" opt/derivative})
 
-(defn statfunc [stat files buckets]
+(defn statfunc
+  "Get function over stat in memory db across the given files and buckets.
+   Stat name can be given as \"stat:option\" (such as \"cmd_get:derivative\")
+   to wrap with a function from statopts."
+  [stat files buckets]
   (let [[stat opt] (s/split stat #":")
         optf (statopts opt identity)
         statsets (mdb/across files buckets)]
@@ -47,12 +58,17 @@
        (let [[stats buckets files] (map delist [stats buckets files])
              combinedfuns (for [stat stats] (statfunc stat files buckets))
              res (read-string (or res "1"))
+             ;; The juxtaposition of the requested stat functions.
+             ;; (pointfun time-in-seconds) =>
+             ;; [time-in-milliseconds stat1value stat2value ...] etc.
              pointfun (apply juxt (concat [(partial * 1000)]
                                           (map :func combinedfuns)))
+             ;; Find the time interval where all the requested stats overlap
              [mint maxt] (iv/intersect (map :interval combinedfuns))]
          (json-response
            {:interval [mint maxt]
             :stats stats
+            ;; Calculate points at every `res` seconds in the overlapping interval
             :points (for [x (range mint (inc maxt) res)]
                       (pointfun x))})))
   (GET "/" [] {:status 302
@@ -80,14 +96,18 @@
     (if (:help opts)
       (println usage)
       ;otherwise
-      (do
-        (let [dir (io/file (:dir opts))
-              files (->> (.listFiles dir)
-                         (filter #(.endsWith (.getName %) ".zip")))]
-          (start-server opts)
-          (doseq [f files]
-            (println "Loading" f)
-            (mdb/load-collectinfo f :as (.getName f))
-            (println "Loaded" f)))))))
+      (let [dir (io/file (:dir opts))
+            files (->> (.listFiles dir)
+                       (filter #(.endsWith (.getName %) ".zip")))
+            numfiles (count files)
+            numloaded (atom 0)]
+        (start-server opts)
+        (print (str "Loading files... 0/" numfiles))
+        ;; Load the found .zips file into the memory DB in parallel
+        (doseq [f files]
+         (future (mdb/load-collectinfo f :as (.getName f))
+                 (print (str "\rLoading files... " (swap! numloaded inc) "/" numfiles))
+                 (when (= numfiles @numloaded)
+                   (println "\nDone!"))))))))
 
 

@@ -2,9 +2,14 @@
   (:require [mortimer.analyze :as aly]
             [mortimer.zip :as zip]
             [mortimer.interval :as iv]
-            [incanter.interpolation :as interp]
-            [incanter.charts :as charts]))
+            [incanter.interpolation :as interp]))
 
+;; This atom holds all the data we've loaded
+;; It's a big map:
+;; {"filename"
+;;  {"bucketname" 
+;;   [{:stat val :stat2 val}
+;;    {:stat val :stat2 val}]}}
 (def db (atom {}))
 
 (defn list-files []
@@ -46,7 +51,9 @@
         statf (apply interp/interpolate points args)]
     statf))
 
-(defn combined [statname statsets]
+(defn combined 
+  "Create a function that adds and interpolates statname within statsets"
+  [statname statsets]
   (let [pointsets (map (fn [sset]
                          (map (juxt :time #(get % statname)) sset))
                        statsets)
@@ -60,15 +67,6 @@
     {:interval [mintime maxtime]
      :stat statname
      :func combined}))
-
-(defn stat-plot [combf]
-  (let [{f :func [mint maxt] :interval} combf
-        xs (range mint (inc maxt))
-        ys (map f xs)]
-    (charts/time-series-plot
-      (map (partial * 1000) xs) ys
-      :x-label "Time"
-      :y-label (-> combf :stat name))))
 
 (defn across [files buckets]
   (let [files (if (= files :all) (list-files) files)
