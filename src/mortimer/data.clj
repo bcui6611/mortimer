@@ -1,6 +1,7 @@
 (ns mortimer.data
   (:require [mortimer.analyze :as aly]
             [mortimer.zip :as zip]
+            [mortimer.interval :as iv]
             [incanter.interpolation :as interp]
             [incanter.charts :as charts]))
 
@@ -50,7 +51,11 @@
                          (map (juxt :time #(get % statname)) sset))
                        statsets)
         interped (map interpolate-stat pointsets)
-        [mintime maxtime] (apply (juxt min max) (mapcat (partial map first) pointsets))
+        [mintime maxtime]
+        (iv/intersect
+          (for [ps pointsets]
+            (apply (juxt min max)
+                   (map first ps))))
         combined (fn [t] (apply + (map #(% t) interped)))]
     {:interval [mintime maxtime]
      :stat statname
