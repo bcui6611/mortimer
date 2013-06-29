@@ -1,4 +1,5 @@
 (defproject mortimer "0.1.0-SNAPSHOT"
+  :description "Post-Mortem Log Analysis Tools for Couchbase"
   :main mortimer.web
   :plugins [[lein-marginalia "0.7.1"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
