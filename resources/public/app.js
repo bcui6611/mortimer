@@ -33,6 +33,10 @@ function DataCtrl($scope, $http) {
     return results.map(function(el) { return el.string; });
   }
 
+  $scope.statOn = function(stat) {
+    return $scope.activeStat.indexOf(stat) == 0;
+  }
+
   function toCS(ob) {
     return _(ob).keys().join(',');
   }
@@ -56,8 +60,8 @@ function DataCtrl($scope, $http) {
          digitsAfterDecimal: 0,
          axes: {
            y: {
-             valueFormatter: d3.format('.2s'),
-             axisLabelFormatter: d3.format('.2s')
+             valueFormatter: d3.format('2.3s'),
+             axisLabelFormatter: d3.format('2.3s')
            }
          }
         });

@@ -13,7 +13,7 @@
         <form class="form-search" id="statfilter">
           <input class="input-medium search-query" type="text" ng-model="statfilter"/>
         </form>
-        <ul><li ng-repeat="stat in filteredStats()">
+        <ul><li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
           <a ng-click="dochart(stat)">{{stat}}</a> <a class="dyx" ng-click="dochart(stat+':derivative')">dy/dx</a>
         </li></ul>
       </div>
