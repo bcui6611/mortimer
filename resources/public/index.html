@@ -10,7 +10,7 @@
   <div class="container-fluid" ng-controller="DataCtrl">
     <div class="row-fluid">
       <div class="span2" id="lthing">
-        <form class="form-search">
+        <form class="form-search" id="statfilter">
           <input class="input-medium search-query" type="text" ng-model="statfilter"/>
         </form>
         <ul><li ng-repeat="stat in filteredStats()">
