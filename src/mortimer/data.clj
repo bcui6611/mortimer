@@ -1,6 +1,6 @@
 (ns mortimer.data
   "### The in-memory stats database"
-  (:require [mortimer.analyze :as aly]
+  (:require [mortimer.demangle :as demangle]
             [mortimer.zip :as zip]
             [mortimer.interval :as iv]
             [incanter.interpolation :as interp]))
@@ -43,7 +43,7 @@
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
             instream (.getInputStream zf statfile)
-            stat-data (aly/stats-parse instream)]
+            stat-data (demangle/stats-parse instream)]
         (swap! db merge {as stat-data})
         :ok))))
 

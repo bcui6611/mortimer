@@ -1,4 +1,4 @@
-(ns mortimer.analyze
+(ns mortimer.demangle
   "### Functions for parsing data out of text logs"
   (:require [clojure.java.io :as io]))
 
