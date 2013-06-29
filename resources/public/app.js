@@ -10,7 +10,7 @@ function DataCtrl($scope, $http) {
 
   $scope.activeFiles = {};
   $scope.activeBuckets = {};
-  $scope.activeStat = 'curr_connections';
+  $scope.activeStats = {'curr_connections':true};
   var chart = document.getElementById('chart');
   var container = document.getElementById('charthaver');
   $scope.updating = false;
@@ -34,7 +34,12 @@ function DataCtrl($scope, $http) {
   }
 
   $scope.statOn = function(stat) {
-    return $scope.activeStat.indexOf(stat) == 0;
+    for(s in $scope.activeStats) {
+      if(s == stat || s == stat + ':derivative') {
+        return true;
+      }
+    }
+    return false;
   }
 
   function toCS(ob) {
@@ -42,10 +47,9 @@ function DataCtrl($scope, $http) {
   }
   function makechart() {
     console.log('charting...')
-    $scope.updating = true;
-    var stat = $scope.activeStat;
-    $http.get('/stat', {params: {
-      stat: stat,
+      $scope.updating = true;
+    $http.get('/statdata', {params: {
+      stat: toCS($scope.activeStats),
       res: 10,
       buckets: toCS($scope.activeBuckets),
       files: toCS($scope.activeFiles)
@@ -56,14 +60,15 @@ function DataCtrl($scope, $http) {
         points[p][0] = new Date(points[p][0]);
       }
       var g = new Dygraph(chart, points,
-        {labels: ['Time', stat],
-         digitsAfterDecimal: 0,
-         axes: {
-           y: {
-             valueFormatter: d3.format('2.3s'),
-             axisLabelFormatter: d3.format('2.3s')
-           }
-         }
+        {labels: ['Time'].concat(data.stats),
+          digitsAfterDecimal: 0,
+          legend: 'always',
+          axes: {
+            y: {
+              valueFormatter: d3.format('2.3s'),
+          axisLabelFormatter: d3.format('2.3s')
+            }
+          }
         });
       g.resize();
       dbmakechart = _.once(makechart);
@@ -71,8 +76,13 @@ function DataCtrl($scope, $http) {
     });
   }
   var dbmakechart = _.once(makechart);
-  $scope.dochart = function(stat) {
-    $scope.activeStat = stat;
+  $scope.statclicked = function(stat, e) {
+    if(e.ctrlKey || e.metaKey) {
+      $scope.toggle('activeStats', stat);
+    } else {
+      $scope.activeStats = {};
+      $scope.activeStats[stat] = true;
+    }
     dbmakechart();
   }
   dbmakechart();

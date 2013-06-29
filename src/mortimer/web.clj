@@ -6,6 +6,7 @@
             [clojure.java.io :as io]
             [clojure.string :as s]
             [mortimer.data :as mdb]
+            [mortimer.interval :as iv]
             [cheshire.core :as json]
             [ring.util.response :as response]
             [compojure.handler :refer [api]]
@@ -28,26 +29,32 @@
 (def statopts
   {"derivative" opt/derivative})
 
+(defn statfunc [stat files buckets]
+  (let [[stat opt] (s/split stat #":")
+        optf (statopts opt identity)
+        statsets (mdb/across files buckets)]
+    (update-in (mdb/combined (keyword stat) statsets)
+               [:func] optf)))
+
 (defroutes app-routes
   (GET "/files" [] (json-response (mdb/list-files)))
   (GET "/buckets" [] (json-response (mdb/list-buckets)))
   (GET "/stats" [] (json-response (mdb/list-stats)))
-  (GET "/stat" {{stat :stat
-                 buckets :buckets
-                 res :res
-                 files :files} :params}
-       (let [[stat opt] (s/split stat #":")
-             optf (statopts opt identity)
-             statsets (mdb/across (delist files)
-                                  (delist buckets))
+  (GET "/statdata" {{stats :stat
+                     buckets :buckets
+                     res :res
+                     files :files} :params}
+       (let [[stats buckets files] (map delist [stats buckets files])
+             combinedfuns (for [stat stats] (statfunc stat files buckets))
              res (read-string (or res "1"))
-             combined (mdb/combined (keyword stat) statsets)
-             [mint maxt] (:interval combined)
-             f (optf (:func combined))]
+             pointfun (apply juxt (concat [(partial * 1000)]
+                                          (map :func combinedfuns)))
+             [mint maxt] (iv/intersect (map :interval combinedfuns))]
          (json-response
            {:interval [mint maxt]
+            :stats stats
             :points (for [x (range mint (inc maxt) res)]
-                     [(* x 1000) (f x)])})))
+                      (pointfun x))})))
   (GET "/" [] {:status 302
                :headers {"location" "/index.html"}})
   (route/resources "/")

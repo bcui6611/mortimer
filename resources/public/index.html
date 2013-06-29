@@ -14,7 +14,9 @@
           <input class="input-medium search-query" type="text" ng-model="statfilter"/>
         </form>
         <ul><li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
-          <a ng-click="dochart(stat)">{{stat}}</a> <a class="dyx" ng-click="dochart(stat+':derivative')">dy/dx</a>
+            <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
+              ng-class="{'active': statOn(stat+':derivative')}"
+              class="dyx" ng-click="statclicked(stat+':derivative', $event)">dy/dx</a>
         </li></ul>
       </div>
       <div class="span10" id="rthing">
