@@ -1,4 +1,5 @@
 (ns mortimer.data
+  "### The in-memory stats database"
   (:require [mortimer.analyze :as aly]
             [mortimer.zip :as zip]
             [mortimer.interval :as iv]
@@ -6,10 +7,11 @@
 
 ;; This atom holds all the data we've loaded
 ;; It's a big map:
-;; {"filename"
-;;  {"bucketname" 
-;;   [{:stat val :stat2 val}
-;;    {:stat val :stat2 val}]}}
+;; 
+;;     {"filename"
+;;      {"bucketname" 
+;;       [{:stat val :stat2 val}
+;;        {:stat val :stat2 val}]}}
 (def db (atom {}))
 
 (defn list-files []
@@ -18,16 +20,20 @@
 (defn list-buckets []
   (distinct (or (mapcat keys (vals @db)) [])))
 
-;; find only stats that are numbers
 (defn list-stats []
+  ;; find only stats that are numbers
   (->> (map first (mapcat vals (vals @db)))
        (map #(filter (comp number? val) %))
        (mapcat keys)
        distinct sort))
 
 (defn load-collectinfo
-  "(load-collectinfo filename) or
-   (load-collectinfo filename :as \"nodename\")"
+  "Loads stats data from a collectinfo .ZIP
+
+   Looks for `ns_server.stats.log` or `ns_server.debug.log` in the zip file.
+
+   `(load-collectinfo filename)` or
+   `(load-collectinfo filename :as \"nodename\")`"
   [zipfile & options]
   (let [{:keys [as]} (apply hash-map options)
         as (or as zipfile)]
@@ -42,17 +48,18 @@
         :ok))))
 
 (defn interpolate-stat
-  "Fill in [seconds datum] pairs in messy data.
+  "Fill in `[seconds datum]` pairs in messy data.
    can optionally supply args for incanter.interpolation/interpolate.
    
-   Returns a function of time. ((interpolate-stat-data points) time)"
+   Returns a function of time. `((interpolate-stat-data points) time)`"
   [points & interpargs]
   (let [args (or interpargs [:linear])
         statf (apply interp/interpolate points args)]
     statf))
 
 (defn combined 
-  "Create a function that adds and interpolates statname within statsets"
+  "Given a stat name (as a keyword), returns a function of that stat,
+   added together from all the given statsets."
   [statname statsets]
   (let [pointsets (map (fn [sset]
                          (map (juxt :time #(get % statname)) sset))
@@ -68,7 +75,11 @@
      :stat statname
      :func combined}))
 
-(defn across [files buckets]
+(defn across
+  "Get the statsets for a set of files and buckets.
+
+   `:all` can be supplied instead of either the files or buckets list."
+  [files buckets]
   (let [files (if (= files :all) (list-files) files)
         buckets (if (= buckets :all) (list-buckets) buckets)]
     (remove nil? (for [b buckets

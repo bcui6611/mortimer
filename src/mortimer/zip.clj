@@ -1,29 +1,29 @@
 (ns mortimer.zip
+  "### Functions for working with .ZIP files"
   (:import java.util.zip.ZipFile)
-  (:require [clojure.java.io :as io]
-            [clojure.string :as string]))
+  (:require [clojure.java.io :as io]))
 
-
-;; General ZIP utilities
-
-(defn open [file]
+(defn open 
+  "Open a ZIP file"
+  [file]
   (ZipFile. (io/file file)))
 
-(defn entries [zipfile]
+(defn entries 
+  "Get the list of entries in a ZIP file"
+  [zipfile]
   (enumeration-seq (.entries zipfile)))
 
-(defn suffixed [zipfile suffix]
+(defn suffixed 
+  "Get all entries in a zipfile with names ending with `suffix`"
+  [zipfile suffix]
   (filter #(.endsWith (.getName %) suffix) (entries zipfile)))
 
-(defn suffixed-1 [zipfile suffix] (first (suffixed zipfile suffix)))
+(defn suffixed-1 
+  "Get an entry from the zip file with a name ending with `suffix`"
+  [zipfile suffix] (first (suffixed zipfile suffix)))
 
-(defn- zipslurp [zipfile entry]
-  (slurp (.getInputStream zipfile entry)))
-
-(defn consume [zipfile suffix]
-  (some->> (suffixed-1 zipfile suffix)
-           (zipslurp zipfile)))
-
-(defn stream [zipfile suffix]
+(defn stream 
+  "Get an InputStream from the zip file of an entry with a name ending with `suffix`"
+  [zipfile suffix]
   (some->> (suffixed-1 zipfile suffix)
            (.getInputStream zipfile)))

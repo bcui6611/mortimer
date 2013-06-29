@@ -1,5 +1,6 @@
 (defproject mortimer "0.1.0-SNAPSHOT"
   :main mortimer.web
+  :plugins [[lein-marginalia "0.7.1"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [incanter "1.5.1"]
                  [aleph "0.3.0-rc1"]
