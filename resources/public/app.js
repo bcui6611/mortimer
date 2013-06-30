@@ -45,6 +45,17 @@ function DataCtrl($scope, $http) {
   function toCS(ob) {
     return _(ob).keys().join(',');
   }
+  var g = new Dygraph(chart, [[0,0]],
+    {labels: ['Time', '?'],
+     digitsAfterDecimal: 0,
+     legend: 'always',
+     axes: {
+       y: {
+         valueFormatter: d3.format('2.3s'),
+         axisLabelFormatter: d3.format('2.3s')
+       }
+     }
+    });
   function makechart() {
     console.log('charting...')
       $scope.updating = true;
@@ -59,16 +70,9 @@ function DataCtrl($scope, $http) {
       for(p in points) {
         points[p][0] = new Date(points[p][0]);
       }
-      var g = new Dygraph(chart, points,
-        {labels: ['Time'].concat(data.stats),
-          digitsAfterDecimal: 0,
-          legend: 'always',
-          axes: {
-            y: {
-              valueFormatter: d3.format('2.3s'),
-          axisLabelFormatter: d3.format('2.3s')
-            }
-          }
+      g.updateOptions({
+        file: points,
+        labels: ['Time'].concat(data.stats)
         });
       g.resize();
       dbmakechart = _.once(makechart);
