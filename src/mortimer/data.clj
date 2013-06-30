@@ -53,7 +53,7 @@
    
    Returns a function of time. `((interpolate-stat-data points) time)`"
   [points & interpargs]
-  (let [args (or interpargs [:linear])
+  (let [args (or interpargs [:cubic])
         statf (apply interp/interpolate points args)]
     statf))
 
