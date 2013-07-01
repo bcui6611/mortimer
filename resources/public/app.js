@@ -45,6 +45,16 @@ function DataCtrl($scope, $http) {
   function toCS(ob) {
     return _(ob).keys().join(',');
   }
+  var annotid = 0;
+  var annotations = [];
+  function syncAnnotations() {
+    g.setAnnotations(_.map(annotations, function(ann, idx) {
+      ann.series = $scope.seriesnames[0];
+      ann.attachAtBottom = true;
+      ann.idx = idx;
+      return ann;
+    }));
+  }
   var g = new Dygraph(chart, [[0,0]],
     {labels: ['Time', '?'],
      digitsAfterDecimal: 0,
@@ -54,6 +64,24 @@ function DataCtrl($scope, $http) {
          valueFormatter: d3.format('2.3s'),
          axisLabelFormatter: d3.format('2.3s')
        }
+     },
+     clickCallback: function(e, x, p) {
+       if(!(e.ctrlKey || e.metaKey)) {
+         return;
+       }
+       var ann = {
+         xval: x,
+         shortText: ++annotid,
+         text: 'Marker #' + annotid,
+       };
+       annotations.push(ann);
+       syncAnnotations();
+     },
+     annotationClickHandler: function(ann, p, dygraph, e) {
+       if(!e.shiftKey) { return; }
+       delete annotations[ann.idx];
+       annotations = _.compact(annotations);
+       syncAnnotations();
      }
     });
   function makechart() {
@@ -70,6 +98,7 @@ function DataCtrl($scope, $http) {
     }}).
     success(function(data) {
       var points = data.points;
+      $scope.seriesnames = data.stats;
       for(p in points) {
         points[p][0] = new Date(points[p][0]);
       }
@@ -77,6 +106,7 @@ function DataCtrl($scope, $http) {
         file: points,
         labels: ['Time'].concat(data.stats)
         });
+      syncAnnotations();
       g.resize();
       $scope.updating = false;
       if($scope.retrigger) {
