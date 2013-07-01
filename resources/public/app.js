@@ -20,7 +20,7 @@ function DataCtrl($scope, $http) {
     } else {
       $scope[tgl][item] = true;
     }
-    dbmakechart();
+    makechart();
   };
 
   $scope.statfilter = '';
@@ -57,8 +57,11 @@ function DataCtrl($scope, $http) {
      }
     });
   function makechart() {
-    console.log('charting...')
-      $scope.updating = true;
+    if($scope.updating) {
+      $scope.retrigger = true;
+      return;
+    }
+    $scope.updating = true;
     $http.get('/statdata', {params: {
       stat: toCS($scope.activeStats),
       res: 10,
@@ -75,11 +78,13 @@ function DataCtrl($scope, $http) {
         labels: ['Time'].concat(data.stats)
         });
       g.resize();
-      dbmakechart = _.once(makechart);
       $scope.updating = false;
+      if($scope.retrigger) {
+        $scope.retrigger = false;
+        makechart();
+      }
     });
   }
-  var dbmakechart = _.once(makechart);
   $scope.statclicked = function(stat, e) {
     if(e.ctrlKey || e.metaKey) {
       $scope.toggle('activeStats', stat);
@@ -87,7 +92,7 @@ function DataCtrl($scope, $http) {
       $scope.activeStats = {};
       $scope.activeStats[stat] = true;
     }
-    dbmakechart();
+    makechart();
   }
-  dbmakechart();
+  makechart();
 }
