@@ -34,7 +34,7 @@
           els :all)) :all) :all))
 
 (def statopts
-  {"derivative" opt/derivative})
+  {"derivative" [opt/derivative :cubic]})
 
 (defn statfunc
   "Get function over stat in memory db across the given files and buckets.
@@ -42,9 +42,9 @@
    to wrap with a function from statopts."
   [stat files buckets]
   (let [[stat opt] (s/split stat #":")
-        optf (statopts opt identity)
+        [optf & interpargs] (statopts opt [identity])
         statsets (mdb/across files buckets)]
-    (update-in (mdb/combined (keyword stat) statsets)
+    (update-in (mdb/combined (keyword stat) statsets interpargs)
                [:func] optf)))
 
 (defroutes app-routes

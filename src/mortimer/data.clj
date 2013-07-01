@@ -53,18 +53,18 @@
    
    Returns a function of time. `((interpolate-stat-data points) time)`"
   [points & interpargs]
-  (let [args (or interpargs [:cubic])
+  (let [args (or interpargs [:linear])
         statf (apply interp/interpolate points args)]
     statf))
 
 (defn combined 
   "Given a stat name (as a keyword), returns a function of that stat,
    added together from all the given statsets."
-  [statname statsets]
+  [statname statsets interpargs]
   (let [pointsets (map (fn [sset]
                          (map (juxt :time #(get % statname)) sset))
                        statsets)
-        interped (map interpolate-stat pointsets)
+        interped (map #(apply interpolate-stat % interpargs) pointsets)
         [mintime maxtime]
         (iv/intersect
           (for [ps pointsets]
