@@ -4,7 +4,7 @@
 
 Currently I can
 
- * Read ep\_engine stat information from `ns_server.stats.log` in `cb_collectinfo` zip files (2.0+)
+ * Read ep\_engine stat information from `ns_server.stats.log` in `cbcollect_info` zip files (2.0+)
  * Graph those on a Web UI
 
 TODOs: [see tag `mortimer` on cbugg][cbg]
