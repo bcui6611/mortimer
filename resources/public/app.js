@@ -82,7 +82,8 @@ function DataCtrl($scope, $http) {
        delete annotations[ann.idx];
        annotations = _.compact(annotations);
        syncAnnotations();
-     }
+     },
+     labelsSeparateLines: true
     });
   function makechart() {
     if($scope.updating) {
