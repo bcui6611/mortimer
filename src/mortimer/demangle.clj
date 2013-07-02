@@ -6,11 +6,15 @@
   "Takes \"statname value\" lines and returns a map, with
    the statname keywordized."
   [lines]
-  (into {} (for [line lines]
-             (let [[_ k v] (re-matches #"([^\s]+)\s+(.*)" line)]
-               [(keyword k) 
-                (if (re-matches #"[\-\d.]+" v)
-                  (read-string v) v)]))))
+  (reduce (fn [acc line]
+            (let [[_ k v] (re-matches #"([^\s]+)\s+(.*)" line)]
+              (if (and k v)
+                (assoc acc 
+                       (keyword k) 
+                       (if (re-matches #"[\-\d.]+" v)
+                         (read-string v) v))
+                acc)))
+          {} lines))
 
 (defn stats-parse 
   "Given an input stream over a log file, searches for `Stats for bucket \"bucketname\"`

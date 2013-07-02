@@ -101,14 +101,21 @@
                        (filter #(.endsWith (.getName %) ".zip")))
             numfiles (count files)
             numloaded (atom 0)]
-        (start-server opts)
+
         (print (str "Loading files... 0/" numfiles))
         (flush)
         ;; Load the found .zips file into the memory DB in parallel
-        (doseq [f files]
-         (future (mdb/load-collectinfo f :as (.getName f))
-                 (print (str "\rLoading files... " (swap! numloaded inc) "/" numfiles)) (flush)
-                 (when (= numfiles @numloaded)
-                   (println "\nDone!"))))))))
+        (doseq [fut  
+                (mapv (fn [f]
+                        (future (mdb/load-collectinfo f :as (.getName f))
+                                (print (str "\rLoading files... " 
+                                            (swap! numloaded inc) "/" numfiles)) (flush)
+                                (when (= numfiles @numloaded)
+                                  (println "\nDone!"))))
+                      files)]
+          @fut)
+        (start-server opts)
+        )
+      )))
 
 
