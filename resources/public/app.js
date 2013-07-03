@@ -97,7 +97,8 @@ function DataCtrl($scope, $http) {
        annotations = _.compact(annotations);
        syncAnnotations();
      },
-     labelsSeparateLines: true
+     labelsSeparateLines: true,
+     labelsDiv: "graphlabels"
     });
   $scope.errored = false;
   function makechart() {

@@ -27,8 +27,7 @@
         </ul>
       </div>
       <div class="span10" id="rthing">
-        <div class="pull-right">
-          Connect Gaps? <input type="checkbox" ng-model="connect">
+        <div id="graphlabels" class="pull-right">
         </div>
         <div>
           Select File:
@@ -48,6 +47,9 @@
         </div>
         <div class="pull-right loaderror" ng-class="{'hide': !errored}">
           <i class="icon-warning-sign"></i>
+        </div>
+        <div>
+          Connect Gaps? <input type="checkbox" ng-model="connect">
         </div>
         <div id="charthaver">
           <div id="chart">
