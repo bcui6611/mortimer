@@ -1,4 +1,4 @@
-var app = angular.module('mortimer', []);
+var app = angular.module('mortimer', ['ui.bootstrap']);
 
 function DataCtrl($scope, $http) {
   function fetch(list) {
@@ -48,7 +48,9 @@ function DataCtrl($scope, $http) {
 
   $scope.statOn = function(stat) {
     for(s in $scope.activeStats) {
-      if(s == stat || s.indexOf(stat + ':') == 0) {
+      if( s == stat || 
+          s.indexOf(stat + ':') == 0 ||
+          s.indexOf(stat + ';') == 0) {
         return true;
       }
     }
@@ -152,7 +154,13 @@ function DataCtrl($scope, $http) {
     }
   }
 
-  $scope.presets = {'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat', 'ep_max_data_size']};
+  $scope.presets = {
+    'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat', 'ep_max_data_size',
+               'ep_metadata_size', 'ep_value_size'],
+    'resident ratios': ['vb_active_perc_mem_resident', 'vb_replica_perc_mem_resident'],
+    'operations': ['cmd_get:rate', 'cmd_set:rate', 'delete_hits:rate', 'delete_misses:rate',
+                   'ep_tmp_oom_errors:rate']
+  };
   $scope.applyPreset = function(preset, e) {
     if(!(e.ctrlKey || e.metaKey)) {
       $scope.activeStats = {};
@@ -160,6 +168,9 @@ function DataCtrl($scope, $http) {
     _.each(preset, function(stat) {
       setupstat(stat, true);
     });
+  }
+  $scope.presetStats = function(preset) {
+    return _(preset).map(_.escape).join("<br>");
   }
 
   $scope.statclicked = function(stat, e) {

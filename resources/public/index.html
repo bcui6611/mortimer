@@ -16,13 +16,15 @@
         <ul>
             <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
               <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
-                <a ng-click="applyPreset(preset, $event)">{{name}}</a>
-              </li>
+                <a ng-click="applyPreset(preset, $event)"
+                  tooltip-placement="right"
+                  tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+             </li>
             <li ng-class="{'hide':statfilter}"><hr></li>
             <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
             <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
               ng-class="{'active': statOn(stat+':rate')}"
-              class="dyx" ng-click="statclicked(stat+':rate', $event)">dy/dx</a>
+              class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
               </li>
         </ul>
       </div>
@@ -60,6 +62,8 @@
   </div>
   <script src="vendor/less.js"></script>
   <script src="vendor/components/angular/angular.min.js"></script>
+  <script src="vendor/components/angular-bootstrap/ui-bootstrap.min.js"></script>
+  <script src="vendor/components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
   <script src="vendor/components/lodash/dist/lodash.min.js"></script>
   <script src="vendor/components/fuzzy/fuzzy-min.js"></script>
   <script src="vendor/dygraph-combined.js"></script>
