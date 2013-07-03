@@ -31,9 +31,12 @@ Usage:
  -h, --no-help, --help  false    Display help
 
 $ java -jar mortimer.jar -d ~/dir/of/infos
+Loading Files ... 2/2
+Done!
 Listening on http://localhost:18334/
-Loading #<File /Users/apage43/fun/node-0.zip>
-Loaded #<File /Users/apage43/fun/node-0.zip>
-Loading #<File /Users/apage43/fun/node-1.zip>
-Loaded #<File /Users/apage43/fun/node-1.zip>
 ```
+
+If loading files is slow (or you get an `OutOfMemoryError` exception),
+try giving the JVM more RAM:
+
+    java -Xmx2g -jar mortimer.jar ...

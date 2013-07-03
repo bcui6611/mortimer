@@ -12,7 +12,10 @@
 ;;      {"bucketname" 
 ;;       [{:stat val :stat2 val}
 ;;        {:stat val :stat2 val}]}}
-(def db (atom {}))
+;;
+;; defonce here so that when I'm working on this interactively, reloading the
+;; file doesn't clear the db
+(defonce db (atom {}))
 
 (defn list-files []
   (keys @db))
@@ -47,41 +50,12 @@
         (swap! db merge {as stat-data})
         :ok))))
 
-(defn interpolate-stat
-  "Fill in `[seconds datum]` pairs in messy data.
-   can optionally supply args for incanter.interpolation/interpolate.
-   
-   Returns a function of time. `((interpolate-stat-data points) time)`"
-  [points & interpargs]
-  (let [args (or interpargs [:linear])
-        statf (apply interp/interpolate points args)]
-    statf))
-
-(defn combined 
-  "Given a stat name (as a keyword), returns a function of that stat,
-   added together from all the given statsets."
-  [statname statsets interpargs]
-  (let [pointsets (map (fn [sset]
-                         (map (juxt :time #(get % statname)) sset))
-                       statsets)
-        interped (map #(apply interpolate-stat % interpargs) pointsets)
-        [mintime maxtime]
-        (iv/intersect
-          (for [ps pointsets]
-            (apply (juxt min max)
-                   (map first ps))))
-        combined (fn [t] (apply + (map #(% t) interped)))]
-    {:interval [mintime maxtime]
-     :stat statname
-     :func combined}))
-
-(defn across
-  "Get the statsets for a set of files and buckets.
-
-   `:all` can be supplied instead of either the files or buckets list."
-  [files buckets]
-  (let [files (if (= files :all) (list-files) files)
-        buckets (if (= buckets :all) (list-buckets) buckets)]
-    (remove nil? (for [b buckets
-                       f files]
-                   (get-in @db [f b])))))
+(defn extract [stat statset]
+  (let [ov (transient [])]
+    (reduce (fn [acc statsnap]
+              (let [t (:time statsnap)
+                    v (get statsnap stat)]
+                (if (and t v)
+                  (conj! acc [t v])
+                  acc))) ov statset)
+    (persistent! ov)))

@@ -13,28 +13,41 @@
         <form class="form-search" id="statfilter">
           <input class="input-medium search-query" type="text" ng-model="statfilter"/>
         </form>
-        <ul><li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
+        <ul>
+            <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
+              <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
+                <a ng-click="applyPreset(preset, $event)">{{name}}</a>
+              </li>
+            <li ng-class="{'hide':statfilter}"><hr></li>
+            <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
             <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-              ng-class="{'active': statOn(stat+':derivative')}"
-              class="dyx" ng-click="statclicked(stat+':derivative', $event)">dy/dx</a>
-        </li></ul>
+              ng-class="{'active': statOn(stat+':rate')}"
+              class="dyx" ng-click="statclicked(stat+':rate', $event)">dy/dx</a>
+              </li>
+        </ul>
       </div>
       <div class="span10" id="rthing">
+        <div class="pull-right">
+          Connect Gaps? <input type="checkbox" ng-model="connect">
+        </div>
         <div>
-          Files
+          Select File:
           <div class="btn-group">
-            <button class="btn" ng-class="{'active': activeFiles[i]}" ng-click="toggle('activeFiles', i)"
+            <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
             ng-repeat="i in files">{{i}}</button>
           </div>
         </div>
         <div>
-          Buckets
+          Select Bucket:
           <div class="btn-group">
-            <button class="btn" ng-class="{'active': activeBuckets[i]}" ng-click="toggle('activeBuckets', i)" ng-repeat="i in buckets">{{i}}</button>
+            <button class="btn" ng-class="{'active': activeBucket == i}" ng-click="set('activeBucket', i)" ng-repeat="i in buckets">{{i}}</button>
           </div>
         </div>
-        <div class="pull-right loader" ng-class="{'notloading': !updating}">
+        <div class="pull-right loader" ng-class="{'hide': !updating}">
           <i class="icon-refresh icon-spin"></i>
+        </div>
+        <div class="pull-right loaderror" ng-class="{'hide': !errored}">
+          <i class="icon-warning-sign"></i>
         </div>
         <div id="charthaver">
           <div id="chart">
