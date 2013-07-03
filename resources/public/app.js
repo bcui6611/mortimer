@@ -152,7 +152,7 @@ function DataCtrl($scope, $http) {
     }
   }
 
-  $scope.presets = {'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat']};
+  $scope.presets = {'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat', 'ep_max_data_size']};
   $scope.applyPreset = function(preset, e) {
     if(!(e.ctrlKey || e.metaKey)) {
       $scope.activeStats = {};
