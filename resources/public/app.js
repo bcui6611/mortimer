@@ -156,7 +156,7 @@ function DataCtrl($scope, $http) {
 
   $scope.presets = {
     'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat', 'ep_max_data_size',
-               'ep_metadata_size', 'ep_value_size'],
+               'ep_meta_data_memory', 'ep_value_size'],
     'resident ratios': ['vb_active_perc_mem_resident', 'vb_replica_perc_mem_resident'],
     'operations': ['cmd_get:rate', 'cmd_set:rate', 'delete_hits:rate', 'delete_misses:rate',
                    'ep_tmp_oom_errors:rate']
