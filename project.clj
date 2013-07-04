@@ -1,7 +1,8 @@
 (defproject mortimer "0.1.0-SNAPSHOT"
   :description "Post-Mortem Log Analysis Tools for Couchbase"
-  :main mortimer.web
-  :plugins [[lein-marginalia "0.7.1"]]
+  :main ^:skip-aot mortimer.web
+  :plugins [[lein-marginalia "0.7.1"]
+            [org.timmc/lein-otf "2.0.1"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [incanter/incanter-core "1.5.1"]
                  [aleph "0.3.0-rc1"]

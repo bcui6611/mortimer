@@ -1,6 +1,5 @@
 (ns mortimer.web
   "### The web app server"
-  (:gen-class)
   (:use compojure.core)
   (:require [compojure.route :as route]
             [clojure.tools.cli :refer [cli]]
