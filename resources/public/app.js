@@ -1,22 +1,41 @@
 var app = angular.module('mortimer', ['ui.bootstrap']);
 
-function DataCtrl($scope, $http) {
-  function fetch(list) {
-    $http.get('/'+list).success(function(data) {
-      $scope[list] = data;
-      if(list == 'files' && list.length) {
-        $scope.activeFile = data[0];
-      }
-      if(list == 'buckets' && list.length) {
-        $scope.activeBucket = data[0];
-      }
-      if($scope.activeBucket && $scope.activeFile) {
-        console.log('Start!');
-        $scope.statclicked('curr_connections', {});
-      }
-    });
-  }
-  _(['files','buckets','stats']).each(fetch);
+app.config(function($routeProvider, $locationProvider) {
+  $routeProvider.
+  when('/stats/', { templateUrl: '/partials/stats.html',
+                    controller: 'DataCtrl'}).
+  when('/files/', { templateUrl: '/partials/files.html',
+                    controller: 'FilesCtrl'}).
+  otherwise({ redirectTo: '/stats/'});
+});
+
+app.factory('StatusService', function($rootScope) {
+  var status = {remote: {}};
+  var mws = new WebSocket("ws://" + location.host + "/status-ws");
+  mws.onmessage = function(evt) {
+    var message = JSON.parse(evt.data);
+    if(message.kind == "status-update") {
+      status.remote = message.data;
+      $rootScope.$apply();
+    }
+  };
+  return status;
+})
+
+function FilesCtrl($scope, StatusService) {
+  $scope.status = StatusService;
+}
+
+function DataCtrl($scope, $http, $log, $dialog, StatusService) {
+  $scope.status = StatusService;
+  $scope.stats = [];
+  $scope.$watch('status.remote.files', function() {
+    if(_.isEmpty($scope.stats)) {
+     $http.get('/stats').success(function(data) {
+        $scope.stats = data;
+     });
+    }
+  });
 
   $scope.activeFile = '';
   $scope.activeBucket = '';
@@ -139,6 +158,11 @@ function DataCtrl($scope, $http) {
   }
 
   var setupstat = function(stat, add) {
+    if(!($scope.activeBucket && $scope.activeFile)) {
+      $log.error("Must have a bucket and file selected!");
+      $dialog.messageBox("Error", "You must have a bucket and file selected!", [{label:'OK', result: true}]).open();
+      return false;
+    }
     if(stat.indexOf(':') < 0) { 
       stat += ':'
     } else {
@@ -152,6 +176,7 @@ function DataCtrl($scope, $http) {
       $scope.activeStats = {};
       $scope.activeStats[stat] = true;
     }
+    return true;
   }
 
   $scope.presets = {
@@ -166,7 +191,7 @@ function DataCtrl($scope, $http) {
       $scope.activeStats = {};
     }
     _.each(preset, function(stat) {
-      setupstat(stat, true);
+      return setupstat(stat, true);
     });
   }
   $scope.presetStats = function(preset) {
@@ -174,8 +199,9 @@ function DataCtrl($scope, $http) {
   }
 
   $scope.statclicked = function(stat, e) {
-    setupstat(stat, e.ctrlKey || e.metaKey);
-    makechart();
+    if(setupstat(stat, e.ctrlKey || e.metaKey)) {
+      makechart();
+    }
   }
 
   $scope.connect = true;
@@ -185,3 +211,4 @@ function DataCtrl($scope, $http) {
     });
   });
 }
+

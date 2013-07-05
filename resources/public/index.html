@@ -1,64 +1,13 @@
 <!DOCTYPE html>
 <html ng-app="mortimer">
 <head>
-  <title>stats</title>
+  <title>mortimer</title>
   <link rel="stylesheet" type="text/css" href="bootstrap.css">
   <link rel="stylesheet" type="text/css" href="vendor/css/font-awesome.css">
   <link rel="stylesheet/less" type="text/css" href="app.less">
 </head>
 <body>
-  <div class="container-fluid" ng-controller="DataCtrl">
-    <div class="row-fluid">
-      <div class="span2" id="lthing">
-        <form class="form-search" id="statfilter">
-          <input class="input-medium search-query" type="text" ng-model="statfilter"/>
-        </form>
-        <ul>
-            <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
-              <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
-                <a ng-click="applyPreset(preset, $event)"
-                  tooltip-placement="right"
-                  tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
-             </li>
-            <li ng-class="{'hide':statfilter}"><hr></li>
-            <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
-            <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-              ng-class="{'active': statOn(stat+':rate')}"
-              class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
-              </li>
-        </ul>
-      </div>
-      <div class="span10" id="rthing">
-        <div id="graphlabels" class="pull-right">
-        </div>
-        <div>
-          Select File:
-          <div class="btn-group">
-            <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
-            ng-repeat="i in files">{{i}}</button>
-          </div>
-        </div>
-        <div>
-          Select Bucket:
-          <div class="btn-group">
-            <button class="btn" ng-class="{'active': activeBucket == i}" ng-click="set('activeBucket', i)" ng-repeat="i in buckets">{{i}}</button>
-          </div>
-        </div>
-        <div class="pull-right loader" ng-class="{'hide': !updating}">
-          <i class="icon-refresh icon-spin"></i>
-        </div>
-        <div class="pull-right loaderror" ng-class="{'hide': !errored}">
-          <i class="icon-warning-sign"></i>
-        </div>
-        <div>
-          Connect Gaps? <input type="checkbox" ng-model="connect">
-        </div>
-        <div id="charthaver">
-          <div id="chart">
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="container-fluid" ng-view>
   </div>
   <script src="vendor/less.js"></script>
   <script src="vendor/angular.min.js"></script>

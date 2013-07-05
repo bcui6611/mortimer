@@ -13,7 +13,9 @@
             [incanter.optimize :as opt]
             [incanter.interpolation :as interp]  
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
+            [lamina.core :as lam]
             [aleph.http :refer [start-http-server
+                                wrap-aleph-handler
                                 wrap-ring-handler]]))
 
 (defn json-response
@@ -84,6 +86,23 @@
                (into [(* t 1000)]
                      (pointfn t)))}))
 
+(defonce connected-dudes (atom #{}))
+
+(defn send-update [dudes]
+  (let [message (json/generate-string
+                  {:kind :status-update
+                   :data {:files (mdb/list-files)
+                          :loading @mdb/progress
+                          :buckets (mdb/list-buckets)}})]
+    (doseq [d dudes]
+      (lam/enqueue d message))))
+
+(defn ws-handler 
+  [ch handshake]
+  (swap! connected-dudes conj ch)
+  (lam/on-closed ch #(swap! connected-dudes disj ch))
+  (send-update [ch]))
+
 (defroutes app-routes
   (GET "/files" [] (json-response (mdb/list-files)))
   (GET "/buckets" [] (json-response (mdb/list-buckets)))
@@ -91,8 +110,10 @@
   (GET "/statdata" {{stats :stat} :params}
        (let [stats (delist stats)]
          (json-response (multistat-response stats))))
-  (GET "/" [] {:status 302
-               :headers {"location" "/index.html"}})
+  (GET "/status-ws" {}
+       (wrap-aleph-handler ws-handler))
+  (GET "/" [] {:body (slurp (io/resource "public/index.html"))
+               :headers {"content-type" "text/html"}})
   (route/resources "/")
   (route/not-found "404!"))
 
@@ -106,7 +127,7 @@
 (defn start-server [{:keys [port]}]
   (reset! server (-> #'handler
                      wrap-ring-handler
-                     (start-http-server {:port port})))
+                     (start-http-server {:port port :websocket true})))
   (println (str "Listening on http://localhost:" port "/")))
 
 (defn -main [& args]
@@ -123,7 +144,10 @@
                        (filter #(.endsWith (.getName %) ".zip")))
             numfiles (count files)
             numloaded (atom 0)]
-
+        (start-server opts)    
+        (mdb/progress-updater-start)
+        (swap! mdb/progress-watchers conj
+               (fn [] (send-update @connected-dudes)))
         (print (str "Loading files... 0/" numfiles))
         (flush)
         ;; Load the found .zips file into the memory DB in parallel
@@ -135,6 +159,5 @@
                                 (when (= numfiles @numloaded)
                                   (println "\nDone!"))))
                       files)]
-          @fut)
-        (start-server opts)))))
+          @fut)))))
 

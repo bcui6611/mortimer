@@ -7,6 +7,7 @@
                  [incanter/incanter-core "1.5.1"]
                  [aleph "0.3.0-rc1"]
                  [cheshire "5.2.0"]
+                 [commons-io "2.4"]
                  [compojure "1.1.5"]
                  [ring/ring-devel "1.2.0-RC1"]
                  [org.clojure/tools.cli "0.2.2"]])

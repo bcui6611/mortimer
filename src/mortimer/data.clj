@@ -1,6 +1,8 @@
 (ns mortimer.data
   "### The in-memory stats database"
+  (:import org.apache.commons.io.input.CountingInputStream)
   (:require [mortimer.demangle :as demangle]
+            [cheshire.generate :as json-enc]
             [mortimer.zip :as zip]
             [mortimer.interval :as iv]
             [incanter.interpolation :as interp]))
@@ -30,6 +32,37 @@
        (mapcat keys)
        distinct sort))
 
+(defonce progress (atom {}))
+(defonce progress-watchers (atom #{}))
+
+(defn watched-stream [id zipfile entry]
+  (let [endsize (.getSize entry)
+        instream (.getInputStream zipfile entry)
+        counted (CountingInputStream. instream)]
+    (swap! progress assoc id
+           {:endsize endsize
+            :counted counted})
+    counted))
+
+(json-enc/add-encoder 
+  CountingInputStream
+  (fn [c gen]
+    (json-enc/encode-long (.getByteCount c) gen)))
+
+(defn notice-progress-watchers []
+  (doseq [w @progress-watchers]
+    (w)))  
+
+(defn progress-updater-start []
+  (.start 
+    (Thread. 
+      (fn []
+        (let [ids (keys @progress)] 
+          (when (seq ids) 
+            (notice-progress-watchers)))
+        (Thread/sleep 100)
+        (recur)))))
+
 (defn load-collectinfo
   "Loads stats data from a collectinfo .ZIP
 
@@ -45,9 +78,10 @@
             (or (zip/suffixed-1 zf "/ns_server.stats.log")
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
-            instream (.getInputStream zf statfile)
-            stat-data (demangle/stats-parse instream)]
-        (swap! db merge {as stat-data})
+            counted (watched-stream as zf statfile)]
+        (try (swap! db merge {as (demangle/stats-parse counted)})
+             (finally (swap! progress dissoc as)
+                      (notice-progress-watchers)))
         :ok))))
 
 (defn extract [stat statset]

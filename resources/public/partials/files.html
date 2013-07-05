@@ -1,0 +1,12 @@
+<h3>Loaded files:</h3>
+<ul>
+	<li ng-repeat="file in status.remote.files">{{file}}</li>
+</ul>
+<h3>Loading files:</h3>
+<ul>
+	<li ng-repeat="(f, info) in status.remote.loading">
+		<button class="btn">
+			{{f}} <progress percent="(100 * info.counted / info.endsize)" class="loaderbar"></progress>
+		</button>
+	</li>
+</ul>
