@@ -3,18 +3,29 @@
     <form class="form-search" id="statfilter">
       <input class="input-small search-query" type="text" ng-model="statfilter"/>
     </form>
+    <button class="btn" id="save" ng-click="saveActiveStats()">
+      <i class="icon-save"></i> Save Preset
+    </button>
     <ul>
       <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
       <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
         <a ng-click="applyPreset(preset, $event)"
-          tooltip-placement="right"
-          tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+        tooltip-placement="right"
+        tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+      </li>
+      <li ng-class="{'hide':(statfilter || !hasSaved())}"><b>Saved</b></li>
+      <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in saved">
+        <a ng-click="applyPreset(preset, $event)"
+        tooltip-placement="right"
+        tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+        <a class="removesaved"
+        ng-click="deleteSaved(name)"><i class="icon-remove pull-right"></i></a>
       </li>
       <li ng-class="{'hide':statfilter}"><hr></li>
       <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
         <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-          ng-class="{'active': statOn(stat+':rate')}"
-          class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
+        ng-class="{'active': statOn(stat+':rate')}"
+        class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
       </li>
     </ul>
   </div>
@@ -25,7 +36,7 @@
       Select File:
       <div class="btn-group">
         <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
-          ng-repeat="i in status.remote.files">{{i}}</button>
+        ng-repeat="i in status.remote.files">{{i}}</button>
         <button class="btn" disabled ng-repeat="(f, info) in status.remote.loading">
           {{f}}<progress percent="(100 * info.counted / info.endsize)" class="loaderbar"></progress>
         </button>
@@ -36,8 +47,8 @@
       Select Bucket:
       <div class="btn-group">
         <button class="btn" ng-class="{'active': activeBucket == i}" 
-                            ng-click="set('activeBucket', i)" 
-                            ng-repeat="i in status.remote.buckets">{{i}}</button>
+        ng-click="set('activeBucket', i)" 
+        ng-repeat="i in status.remote.buckets">{{i}}</button>
       </div>
     </div>
     <div class="pull-right loader" ng-class="{'hide': !updating}">

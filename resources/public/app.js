@@ -22,6 +22,18 @@ app.factory('StatusService', function($rootScope) {
   return status;
 })
 
+function SaveDialogCtrl($scope, dialog) {
+  $scope.save = function() {
+    dialog.close({
+      name: $scope.pname
+    })
+  };
+
+  $scope.cancel = function() {
+    dialog.close();
+  }
+}
+
 function FilesCtrl($scope, StatusService) {
   $scope.status = StatusService;
 }
@@ -36,6 +48,67 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
      });
     }
   });
+
+  //Store saved presets in LocalStorage
+  $scope.saved = {};
+  var loadSaved = function () {
+    var saved_str = window.localStorage.saved,
+        parsed = JSON.parse(saved_str);
+    if(parsed && _.isPlainObject(parsed)) {
+      $scope.saved = parsed;
+    }
+  }
+  loadSaved();
+
+  var saveSaved = function() {
+    $log.info('Saving presets...', $scope.saved)
+    window.localStorage.saved = JSON.stringify($scope.saved);
+  };
+
+  $scope.hasSaved = function() {
+    return !_.isEmpty($scope.saved);
+  }
+
+  $scope.saveActiveStats = function() {
+    if(_.isEmpty($scope.activeStats)) {
+      $dialog.messageBox(
+        "Error", 
+        "You must have stats selected to save a preset!",
+        [{label: 'OK'}]).open();
+      return;
+    }
+    var dia = $dialog.dialog({
+      backdrop: true,
+      templateUrl: 'partials/savedialog.html',
+      controller: 'SaveDialogCtrl'
+    }).open();
+    dia.then(function(result) {
+      if(!result) {
+        return;
+      }
+      var active = _.map($scope.activeStats, function(v, k) {
+        var stat = k.match(/^[^:]+(:rate)?/);
+        return stat[0];
+      })
+      $scope.saved[result.name] = active;
+      saveSaved();
+    })
+  }
+
+  $scope.deleteSaved = function(name) {
+    var dia = $dialog.messageBox(
+      "Confirm",
+      "Really delete preset \'" + name + "\'?",
+      [{label: 'Yes', result: true}, 
+       {label: 'No', result: false}]).open();
+
+    dia.then(function(res) {
+      if(res) {
+        delete $scope.saved[name];
+        saveSaved();
+      }
+    });
+  }
 
   $scope.activeFile = '';
   $scope.activeBucket = '';

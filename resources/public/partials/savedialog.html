@@ -1,0 +1,20 @@
+<div class="modal-header">
+	<h3>Save Current Stats</h3>
+	<div class="modal-body">
+		<form class="form-horizontal">
+			<div class="control-group">
+				<label for="pname" class="control-label">
+					Preset Name
+				</label>
+				<div class="controls"><input type="text" id="pname" ng-model="pname"></div>
+			</div>
+		</form>
+	</div>
+	<div class="modal-body">
+		<button class="btn btn-success" 
+		ng-click="save()"
+		ng-disabled="!pname">Save</button>
+		<button class="btn"
+		ng-click="cancel()">Cancel</button>
+	</div>
+</div>
