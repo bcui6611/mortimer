@@ -17,17 +17,20 @@
 ;;
 ;; defonce here so that when I'm working on this interactively, reloading the
 ;; file doesn't clear the db
-(defonce db (atom {}))
+(defonce stats (atom {}))
+
+;; Similar, but events (so far) aren't grouped by bucket.
+(defonce events (atom {}))
 
 (defn list-files []
-  (keys @db))
+  (keys @stats))
 
 (defn list-buckets []
-  (distinct (or (mapcat keys (vals @db)) [])))
+  (distinct (or (mapcat keys (vals @stats)) [])))
 
 (defn list-stats []
   ;; find only stats that are numbers
-  (->> (map first (mapcat vals (vals @db)))
+  (->> (map first (mapcat vals (vals @stats)))
        (map #(filter (comp number? val) %))
        (mapcat keys)
        distinct sort))
@@ -79,9 +82,11 @@
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
             counted (watched-stream as zf statfile)]
-        (try (swap! db merge {as (demangle/stats-parse counted)})
-             (finally (swap! progress dissoc as)
-                      (notice-progress-watchers)))
+        (try
+          (swap! events merge {as (demangle/diag-parse (zip/stream zf "/diag.log"))})
+          (swap! stats merge {as (demangle/stats-parse counted)})
+          (finally (swap! progress dissoc as)
+                   (notice-progress-watchers)))
         :ok))))
 
 (defn extract [stat statset]

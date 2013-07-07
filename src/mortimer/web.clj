@@ -66,7 +66,7 @@
         file (options :file)
         pointseries (mdb/extract 
                       (keyword stat)
-                      (get-in @mdb/db [file bucket]))
+                      (get-in @mdb/stats [file bucket]))
         pointseries (if (options :rate)
                       (derivative pointseries)
                       pointseries)]
