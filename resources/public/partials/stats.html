@@ -33,22 +33,25 @@
     <div id="graphlabels" class="pull-right">
     </div>
     <div>
-      Select File:
-      <div class="btn-group">
-        <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
-        ng-repeat="i in status.remote.files">{{i}}</button>
-        <button class="btn" disabled ng-repeat="(f, info) in status.remote.loading">
-          {{f}}<progress percent="(100 * info.counted / info.endsize)" class="loaderbar"></progress>
-        </button>
+      <div class="scrollgroup">
+        Select File:
+        <div class="btn-group">
+          <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
+          ng-repeat="i in status.remote.files">{{i}}</button>
+          <button class="btn" disabled ng-repeat="(f, info) in status.remote.loading">
+            {{f}}<progress percent="(100 * info.counted / info.endsize)" class="loaderbar"></progress>
+          </button>
+        </div>
       </div>
-
     </div>
     <div>
-      Select Bucket:
-      <div class="btn-group">
-        <button class="btn" ng-class="{'active': activeBucket == i}" 
-        ng-click="set('activeBucket', i)" 
-        ng-repeat="i in status.remote.buckets">{{i}}</button>
+      <div class="scrollgroup">
+        Select Bucket: ({{status.remote.buckets.length}})
+        <div class="btn-group">
+          <button class="btn" ng-class="{'active': activeBucket == i}" 
+          ng-click="set('activeBucket', i)" 
+          ng-repeat="i in status.remote.buckets">{{i}}</button>
+        </div>
       </div>
     </div>
     <div class="pull-right loader" ng-class="{'hide': !updating}">
