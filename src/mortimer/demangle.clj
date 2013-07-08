@@ -78,6 +78,7 @@
         (into events
               (keep (fn [[re fun]]
                       (when-let [groups (re-matches re line)]
-                        (fun groups)))
+                        (try (fun groups)
+                             (catch Exception e nil))))
                     diag-events)))
       [] (line-seq reader))))
