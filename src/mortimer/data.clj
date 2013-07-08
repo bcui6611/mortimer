@@ -23,10 +23,10 @@
 (defonce events (atom {}))
 
 (defn list-files []
-  (keys @stats))
+  (sort (keys @stats)))
 
 (defn list-buckets []
-  (distinct (or (mapcat keys (vals @stats)) [])))
+  (sort (distinct (or (mapcat keys (vals @stats)) []))))
 
 (defn list-stats []
   ;; find only stats that are numbers
