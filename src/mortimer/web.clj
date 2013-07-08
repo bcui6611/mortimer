@@ -143,7 +143,8 @@
             files (->> (.listFiles dir)
                        (filter #(.endsWith (.getName %) ".zip")))
             numfiles (count files)
-            numloaded (atom 0)]
+            numloaded (atom 0)
+            messages (atom "")]
         (start-server opts)    
         (mdb/progress-updater-start)
         (swap! mdb/progress-watchers conj
@@ -153,11 +154,12 @@
         ;; Load the found .zips file into the memory DB in parallel
         (doseq [fut  
                 (mapv (fn [f]
-                        (future (mdb/load-collectinfo f :as (.getName f))
+                        (future (swap! messages str (with-out-str (mdb/load-collectinfo f :as (.getName f))))
                                 (print (str "\rLoading files... " 
                                             (swap! numloaded inc) "/" numfiles)) (flush)
                                 (when (= numfiles @numloaded)
-                                  (println "\nDone!"))))
+                                  (println "\nDone!")
+                                  (println @messages))))
                       files)]
           @fut)))))
 

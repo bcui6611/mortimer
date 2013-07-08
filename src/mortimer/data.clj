@@ -81,9 +81,14 @@
             (or (zip/suffixed-1 zf "/ns_server.stats.log")
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
+            diagstream (some->> (zip/suffixed-1 zf "/diag.log")
+                                (.getInputStream zf))
             counted (watched-stream as zf statfile)]
         (try
-          (swap! events merge {as (demangle/diag-parse (zip/stream zf "/diag.log"))})
+          (when-not diagstream
+            (println "No diag.log found in file" as))
+          (when diagstream 
+            (swap! events merge {as (demangle/diag-parse diagstream)}))
           (swap! stats merge {as (demangle/stats-parse counted)})
           (finally (swap! progress dissoc as)
                    (notice-progress-watchers)))
