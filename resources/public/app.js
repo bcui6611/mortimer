@@ -52,10 +52,15 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
   //Store saved presets in LocalStorage
   $scope.saved = {};
   var loadSaved = function () {
-    var saved_str = window.localStorage.saved,
-        parsed = JSON.parse(saved_str);
-    if(parsed && _.isPlainObject(parsed)) {
-      $scope.saved = parsed;
+    var saved_str = window.localStorage.saved;
+    try {
+      var parsed = JSON.parse(saved_str);
+      if(parsed && _.isPlainObject(parsed)) {
+        $scope.saved = parsed;
+      }
+    }
+    catch(err) {
+      //Couldn't load saved presets.. probably weren't any.
     }
   }
   loadSaved();
