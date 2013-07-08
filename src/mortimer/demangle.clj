@@ -4,7 +4,7 @@
            java.text.SimpleDateFormat)
   (:require [clojure.java.io :as io]))
 
-(defn stats-kv 
+(defn stats-kv
   "Takes \"statname value\" lines and returns a map, with
    the statname keywordized."
   [lines]
@@ -18,7 +18,7 @@
                 acc)))
           {} lines))
 
-(defn stats-parse 
+(defn stats-parse
   "Given an input stream over a log file, searches for `Stats for bucket \"bucketname\"`
    sections and parses them, returns a map of buckets to lists
    of collected stats samples."
