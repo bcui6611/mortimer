@@ -11,7 +11,7 @@
             [ring.util.response :as response]
             [compojure.handler :refer [api]]
             [incanter.optimize :as opt]
-            [incanter.interpolation :as interp]  
+            [incanter.interpolation :as interp]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [lamina.core :as lam]
             [aleph.http :refer [start-http-server
@@ -24,7 +24,7 @@
   (-> (response/response (json/generate-string obj))
       (response/content-type "application/json; charset=utf-8")))
 
-(defn delist 
+(defn delist
   "Takes a string of the form `\"thing1, thing2, thing3\"`, and returns
    `[\"thing1\" \"thing2\" \"thing3\"]`, or nil if the string contains
    only whitespace and commas."
@@ -36,7 +36,7 @@
           els)))))
 
 
-(defn parse-statqry 
+(defn parse-statqry
   "Parses \"statname:opt;opt2=val2\" into
    {:stat \"statname\" :options {:opt true :opt2 \"val2\"}}"
   [qstr]
@@ -64,7 +64,7 @@
         options (merge defaults options)
         bucket (options :bucket)
         file (options :file)
-        pointseries (mdb/extract 
+        pointseries (mdb/extract
                       (keyword stat)
                       (get-in @mdb/stats [file bucket]))
         pointseries (if (options :rate)
@@ -75,7 +75,7 @@
 (defn multistat-response
   "Combine multiple stats, but only at real points"
   [stats]
-  (let 
+  (let
     [pointseries (map (partial create-pointseries {}) stats)
      times (sort (distinct (map first (apply concat pointseries))))
      pointmaps (map (partial into {}) pointseries)
@@ -97,7 +97,7 @@
     (doseq [d dudes]
       (lam/enqueue d message))))
 
-(defn ws-handler 
+(defn ws-handler
   [ch handshake]
   (swap! connected-dudes conj ch)
   (lam/on-closed ch #(swap! connected-dudes disj ch))
@@ -107,6 +107,7 @@
   (GET "/files" [] (json-response (mdb/list-files)))
   (GET "/buckets" [] (json-response (mdb/list-buckets)))
   (GET "/stats" [] (json-response (mdb/list-stats)))
+  (GET "/events" [file] (json-response (mdb/get-events file)))
   (GET "/statdata" {{stats :stat} :params}
        (let [stats (delist stats)]
          (json-response (multistat-response stats))))
@@ -145,21 +146,25 @@
             numfiles (count files)
             numloaded (atom 0)
             messages (atom "")]
-        (start-server opts)    
+        (start-server opts)
         (mdb/progress-updater-start)
         (swap! mdb/progress-watchers conj
                (fn [] (send-update @connected-dudes)))
         (print (str "Loading files... 0/" numfiles))
         (flush)
         ;; Load the found .zips file into the memory DB in parallel
-        (doseq [fut  
-                (mapv (fn [f]
-                        (future (swap! messages str (with-out-str (mdb/load-collectinfo f :as (.getName f))))
-                                (print (str "\rLoading files... " 
-                                            (swap! numloaded inc) "/" numfiles)) (flush)
-                                (when (= numfiles @numloaded)
-                                  (println "\nDone!")
-                                  (println @messages))))
-                      files)]
-          @fut)))))
+        (try
+          (doseq [fut
+                  (mapv (fn [f]
+                          (future (swap! messages str
+                                         (with-out-str
+                                           (mdb/load-collectinfo f :as (.getName f))))
+                                  (print (str "\rLoading files... "
+                                              (swap! numloaded inc) "/" numfiles))
+                                  (flush)))
+                        files)]
+            @fut)
+          (finally
+            (println "\nDone!")
+            (println @messages)))))))
 

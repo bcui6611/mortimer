@@ -2,7 +2,9 @@
   "### Functions for parsing data out of text logs"
   (:import [java.util TimeZone]
            java.text.SimpleDateFormat)
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io]
+            [clj-time.format :as tformat]
+            [clj-time.coerce :as tcoerce]))
 
 (defn stats-kv
   "Takes \"statname value\" lines and returns a map, with
@@ -11,12 +13,15 @@
   (reduce (fn [acc line]
             (let [[_ k v] (re-matches #"([^\s]+)\s+(.*)" line)]
               (if (and k v)
-                (assoc acc 
-                       (keyword k) 
+                (assoc acc
+                       (keyword k)
                        (if (re-matches #"[\-\d.]+" v)
                          (read-string v) v))
                 acc)))
           {} lines))
+
+(def statslogdateformat
+  (tformat/formatter "yyyy-MM-dd'T'HH:mm:ss.SSS"))
 
 (defn stats-parse
   "Given an input stream over a log file, searches for `Stats for bucket \"bucketname\"`
@@ -24,26 +29,29 @@
    of collected stats samples."
   [input-stream]
   (with-open [reader (io/reader input-stream)]
-      (loop [lines (line-seq reader)
-             stats {}]
-        (if-let [line (first lines)]
-          (if-let [[_ bucket] (re-matches #"^.*Stats for bucket \"(.*)\".*$" line)]
-            (let [statlines (take-while (complement empty?) (rest lines))]
-               (recur 
-                 (drop (count statlines) lines)
-                 (update-in stats [bucket]
-                            #(conj (or % [])
-                                   (stats-kv statlines)))))
-            (recur (rest lines) stats))
-          stats))))
+    (loop [lines (line-seq reader)
+           stats {}]
+      (if-let [line (first lines)]
+        (if-let [[_ localts bucket]
+                 (re-matches
+                   #"^\[stats:debug,([^,]+),.*Stats for bucket \"(.*)\".*$" line)]
+          (let [statlines (take-while (complement empty?) (rest lines))
+                localtime (-> (tformat/parse statslogdateformat localts)
+                              tcoerce/to-long (/ 1000))]
+            (recur
+              (drop (count statlines) lines)
+              (update-in stats [bucket]
+                         #(conj (or % [])
+                                (assoc (stats-kv statlines)
+                                       :localtime localtime)))))
+          (recur (rest lines) stats))
+        stats))))
 
-(def logdateformat
-  (doto
-    (SimpleDateFormat. "yyyy-MM-dd HH:mm:ss.SSS")
-    (.setTimeZone (TimeZone/getTimeZone "UTC"))))
+(def diaglogdateformat
+  (tformat/formatter "yyyy-MM-dd HH:mm:ss.SSS"))
 
-(defn parse-log-date [s]
-  (.parse logdateformat s))
+(defn parse-diag-log-date [s]
+  (tformat/parse diaglogdateformat s))
 
 ;; A list of [regex function] pairs.
 ;;
@@ -54,7 +62,8 @@
     (fn [groups]
       (let [[_ timestamp _module] groups]
         {:category :rebalance
-         :timestamp (parse-log-date timestamp)
+         :icon "icon-truck"
+         :timestamp (parse-diag-log-date timestamp)
          :label "Rebalance Started"}))]
    [#"^([^ ]+ [^ ]+) ([^: ]+)[^ ]+ - Rebalance ([^ ]+).*$"
     (fn [groups]
@@ -65,7 +74,8 @@
                      "exited" :error
                      :unknown)]
         {:category :rebalance
-         :timestamp (parse-log-date timestamp)
+         :timestamp (parse-diag-log-date timestamp)
+         :icon "icon-stop"
          :label (str "Rebalance Ended (" (name reason) ")")
          :reason reason}))]])
 

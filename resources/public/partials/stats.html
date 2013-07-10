@@ -36,7 +36,8 @@
       <div class="scrollgroup">
         Select File:
         <div class="btn-group">
-          <button class="btn" ng-class="{'active': activeFile == i}" ng-click="set('activeFile', i)"
+          <button class="btn" ng-class="{'active': activeFile == i, 'btn-success': eventFile == i}" 
+            ng-click="clickFile(i, $event)"
           ng-repeat="i in status.remote.files">{{i}}</button>
           <button class="btn" disabled ng-repeat="(f, info) in status.remote.loading">
             {{f}}<progress percent="(100 * info.counted / info.endsize)" class="loaderbar"></progress>

@@ -49,6 +49,9 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
     }
   });
 
+  $scope.eventSets = [];
+  $scope.eventFile = null;
+
   //Store saved presets in LocalStorage
   $scope.saved = {};
   var loadSaved = function () {
@@ -133,6 +136,22 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
     makechart();
   };
 
+  $scope.clickFile = function(file, ev) {
+    $scope.activeFile = file;
+    if(ev.ctrlKey || ev.metaKey) {
+      $scope.eventFile = file;
+      $http.get('/events', {params: {file: file}}).
+        success(function(data) {
+          if(data) {
+            //TODO should be able to show from multiple files
+            $scope.eventSets = [data];
+            syncAnnotations();
+          }
+        });
+    }
+  }
+
+
   $scope.statfilter = '';
   $scope.filteredStats = function() {
     var stats = $scope.stats;
@@ -160,13 +179,31 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
   var annotid = 0;
   var annotations = [];
   function syncAnnotations() {
-    g.setAnnotations(_.map(annotations, function(ann, idx) {
+    var toSet = [];
+    if($scope.seriesnames) {
+      _.each($scope.eventSets, function(eset) {
+        _.each(eset, function(ev) {
+          toSet.push({
+            xval: (new Date(ev.timestamp)).getTime(),
+            shortText: ev.short || '',
+            cssClass: ev.icon || '',
+            text: ev.label,
+            idx: -1,
+            attachAtBottom: true,
+            series: $scope.seriesnames[0]
+          });
+        });
+      });
+    }
+    _.each(annotations, function(ann, idx) {
       ann.series = $scope.seriesnames[0];
       ann.attachAtBottom = true;
       ann.idx = idx;
-      return ann;
-    }));
+      toSet.push(ann);
+    });
+    g.setAnnotations(toSet);
   }
+
   var g = new Dygraph(chart, [[0,0]],
     {labels: ['Time', '?'],
      digitsAfterDecimal: 0,

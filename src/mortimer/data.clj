@@ -2,6 +2,9 @@
   "### The in-memory stats database"
   (:import org.apache.commons.io.input.CountingInputStream)
   (:require [mortimer.demangle :as demangle]
+            [clojure.core.reducers :as r]
+            [clj-time.core :as ttime]
+            [clj-time.coerce :as tcoerce]
             [cheshire.generate :as json-enc]
             [mortimer.zip :as zip]
             [mortimer.interval :as iv]
@@ -18,6 +21,7 @@
 ;; defonce here so that when I'm working on this interactively, reloading the
 ;; file doesn't clear the db
 (defonce stats (atom {}))
+(defonce timefns (atom {}))
 
 ;; Similar, but events (so far) aren't grouped by bucket.
 (defonce events (atom {}))
@@ -52,6 +56,10 @@
   (fn [c gen]
     (json-enc/encode-long (.getByteCount c) gen)))
 
+(json-enc/add-encoder
+  org.joda.time.DateTime
+  json-enc/encode-str)
+
 (defn notice-progress-watchers []
   (doseq [w @progress-watchers]
     (w)))  
@@ -65,6 +73,21 @@
             (notice-progress-watchers)))
         (Thread/sleep 100)
         (recur)))))
+
+(defn localtime-index [file]
+  (let [allstats (r/mapcat val (get @stats file))
+        diffs (r/map (juxt :localtime :time) allstats)
+        lookup (into (sorted-map) diffs)]
+    (fn [localtime]
+      (if-let [[local utc] (first (subseq lookup >= localtime))]
+        utc 0))))
+
+(defn remap-event [file event]
+  (let [differ (@timefns file)]
+    (update-in event [:timestamp]
+               (fn [t]
+                 (let [tsecs (/ (tcoerce/to-long t) 1000)]
+                   (tcoerce/from-long (* (differ tsecs) 1000)))))))
 
 (defn load-collectinfo
   "Loads stats data from a collectinfo .ZIP
@@ -87,12 +110,16 @@
         (try
           (when-not diagstream
             (println "No diag.log found in file" as))
+          (swap! stats assoc as (demangle/stats-parse counted))
           (when diagstream 
-            (swap! events merge {as (demangle/diag-parse diagstream)}))
-          (swap! stats merge {as (demangle/stats-parse counted)})
+            (swap! timefns assoc as (localtime-index as))
+            (swap! events assoc as (demangle/diag-parse diagstream)))
           (finally (swap! progress dissoc as)
                    (notice-progress-watchers)))
         :ok))))
+
+(defn get-events [file]
+  (mapv (partial remap-event file) (get @events file)))
 
 (defn extract [stat statset]
   (let [ov (transient [])]
