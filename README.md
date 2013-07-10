@@ -18,10 +18,6 @@ Download the .jar at <http://s3.crate.im/mortimer-build/mortimer.jar>
 
 Documented source code at <http://s3.crate.im/mortimer-build/mortimer-doc.html>
 
-## ForkJoin Class Error?
-
-Can be solved by upgrading to Java 7.
-
 ## Usage
 
 ```
