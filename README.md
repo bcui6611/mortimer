@@ -16,27 +16,93 @@ File feature requests and bugs on
 
 Download the .jar at <http://s3.crate.im/mortimer-build/mortimer.jar>
 
-Documented source code at <http://s3.crate.im/mortimer-build/mortimer-doc.html>
+Documented Clojure code at <http://s3.crate.im/mortimer-build/mortimer-doc.html>
 
-## Usage
+# How to Use
 
-```
-$ java -jar mortimer.jar -h
-Usage:
+## Starting mortimer
 
- Switches               Default  Desc
- --------               -------  ----
- -p, --port             18334    Start webserver on this port
- -d, --dir              .        Directory to search for collectinfo .zips
- -h, --no-help, --help  false    Display help
+Mortimer is a JVM application. Download the .jar, and place it in a
+well known location.
 
-$ java -jar mortimer.jar -d ~/dir/of/infos
-Loading Files ... 2/2
-Done!
-Listening on http://localhost:18334/
-```
+To run it, type
+
+    java -jar ~/path/to/mortimer.jar
+
+By default, the current working directory will be searched for
+`cbcollect_info` ZIP files, and the mortimer web UI will be started on
+port 18334.
+
+Each of these can be changed with command line flags.
+
+    Usage:
+    
+     Switches               Default  Desc
+     --------               -------  ----
+     -p, --port             18334    Start webserver on this port
+     -d, --dir              .        Directory to search for collectinfo .zips
+     -h, --no-help, --help  false    Display help
 
 If loading files is slow (or you get an `OutOfMemoryError` exception),
 try giving the JVM more RAM:
 
-    java -Xmx2g -jar mortimer.jar ...
+    java -Xmx2g -jar ~/path/to/mortimer.jar ...
+
+## Charting stats
+
+Start by selecting a file and bucket to pull stats information from:
+
+![](docimg/filebucket.png)
+
+Click the name of the stat you want to chart:
+
+![](docimg/statnames.png)
+
+And that stat will be plotted in the chart area:
+
+![](docimg/statview.png)
+
+You can click and drag on the chart to zoom in, hold Shift to pan, and
+double click to reset the zoom level.
+
+## Showing rates
+
+Some stats track totals, such as total number of bytes, or operations.
+
+![](docimg/cmdget.png)
+
+You can click "rate" next to a stat to plot its rate of change.
+
+![](docimg/rate.png)
+
+![](docimg/getrate.png)
+
+## Multiple stats
+
+You can hold down the Command or Control keys while clicking on stats to
+add multiple stats to the chart.
+
+![](docimg/multi.png)
+
+## Presets
+
+Mortimer comes with preset combinations of stat selections that are
+commonly useful.
+
+![](docimg/presets.png)
+
+You can also *save* your current selection of stats as a preset using the
+Save Preset button.
+
+## Setting Markers
+
+You can hold Command or Control and click on the chart, to place a
+marker.
+
+![](docimg/markers.png)
+
+Markers will stay on the chart while selecting different stats, allowing
+you to keep track of significant points in time as you explore data.
+
+You can hold Shift and click on a marker to delete it.
+
