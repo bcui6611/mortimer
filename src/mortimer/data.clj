@@ -46,9 +46,15 @@
   (let [endsize (.getSize entry)
         instream (.getInputStream zipfile entry)
         counted (CountingInputStream. instream)]
-    (swap! progress assoc id
-           {:endsize endsize
-            :counted counted})
+    (swap! progress 
+           (fn [progmap]
+             (merge-with (fn [orig update]
+                           {:endsize (+ (:endsize orig) (:endsize update))
+                            :counted (concat (:counted orig) (:counted update))})
+                         progmap
+                         {id 
+                          {:endsize endsize
+                           :counted [counted]}})))
     counted))
 
 (json-enc/add-encoder 
@@ -104,17 +110,18 @@
             (or (zip/suffixed-1 zf "/ns_server.stats.log")
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
-            diagstream (some->> (zip/suffixed-1 zf "/diag.log")
-                                (.getInputStream zf))
-            counted (watched-stream as zf statfile)]
+            diag-counted (some->> (zip/suffixed-1 zf "/diag.log")
+                                  (watched-stream as zf))
+            stats-counted (watched-stream as zf statfile)]
         (try
-          (when-not diagstream
+          (when-not diag-counted
             (println "No diag.log found in file" as))
-          (swap! stats assoc as (demangle/stats-parse counted))
-          (when diagstream 
-            (swap! timefns assoc as (localtime-index as))
-            (swap! events assoc as (demangle/diag-parse diagstream)))
-          (finally (swap! progress dissoc as)
+          (when diag-counted 
+            (swap! events assoc as (demangle/diag-parse diag-counted)))
+          (swap! stats assoc as (demangle/stats-parse stats-counted))
+          (when diag-counted
+            (swap! timefns assoc as (localtime-index as)))
+          (finally (swap! progress dissoc as :stats)
                    (notice-progress-watchers)))
         :ok))))
 

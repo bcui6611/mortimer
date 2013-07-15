@@ -49,6 +49,16 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
     }
   });
 
+  $scope.$watch('status.remote.loading', function() {
+    $scope.loading = {};
+    _.each($scope.status.remote.loading, function(info, k) {
+      $scope.loading[k] = _.map(info.counted, function(num) {
+        return 100 * ( num / info.endsize );
+      });
+    });
+    console.log($scope.loading);
+  });
+
   $scope.eventSets = [];
   $scope.eventFile = null;
 
