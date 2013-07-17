@@ -15,7 +15,7 @@
               (if (and k v)
                 (assoc acc
                        (keyword k)
-                       (if (re-matches #"[\-\d.]+" v)
+                       (if (re-matches #"[\-\d]+(.\d+)?" v)
                          (read-string v) v))
                 acc)))
           {} lines))
