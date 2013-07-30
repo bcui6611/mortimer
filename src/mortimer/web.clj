@@ -1,6 +1,7 @@
 (ns mortimer.web
   "### The web app server"
-  (:use compojure.core)
+  (:use compojure.core
+        clojure.pprint)
   (:require [compojure.route :as route]
             [clojure.tools.cli :refer [cli]]
             [clojure.java.io :as io]
@@ -12,6 +13,7 @@
             [compojure.handler :refer [api]]
             [incanter.optimize :as opt]
             [incanter.interpolation :as interp]
+            [clj-http.client :as http]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [lamina.core :as lam]
             [aleph.http :refer [start-http-server
@@ -131,6 +133,28 @@
                      (start-http-server {:port port :websocket true})))
   (println (str "Listening on http://localhost:" port "/")))
 
+(defn check-update []
+  (try 
+    (if-let [gitrev (s/trim (slurp (io/resource "git-rev.txt")))]
+      (if-let [currentrev (s/trim (slurp "http://s3.crate.im/mortimer-build/git-rev.txt"))]
+        (if (= currentrev gitrev)
+          (println "Up to date!")
+          (let [diffs (:body  
+                        (http/get (str "https://api.github.com/repos/couchbaselabs/mortimer/"
+                                       "compare/" gitrev "..." currentrev) {:as :json}))]
+            (if (= "ahead" (:status diffs))
+              (do
+                (println "New version available! Changes:")
+                (doseq [commit (:commits diffs)]
+                  (let [msg (-> commit :commit :message)
+                        msg (first (s/split-lines msg))]
+                    (println " *" msg)))
+                (println "\nhttp://s3.crate.im/mortimer-build/mortimer.jar\n"))
+              (println "You have a newer version than is available for download."))))
+        (println "Couldn't check for updated version"))
+      (println "Unknown mortimer version"))
+    (catch Exception e "Couldn't check for updates")))
+
 (defn -main [& args]
   (let [[opts more usage]
         (cli args
@@ -146,6 +170,7 @@
             numfiles (count files)
             numloaded (atom 0)
             messages (atom "")]
+        (check-update)
         (start-server opts)
         (mdb/progress-updater-start)
         (swap! mdb/progress-watchers conj

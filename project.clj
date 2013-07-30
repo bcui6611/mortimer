@@ -9,6 +9,7 @@
                  [aleph "0.3.0-rc1"]
                  [cheshire "5.2.0"]
                  [clj-time "0.5.1"]
+                 [clj-http "0.7.3"]
                  [commons-io "2.4"]
                  [compojure "1.1.5"]
                  [ring/ring-devel "1.2.0-RC1"]
