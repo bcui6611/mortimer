@@ -7,6 +7,7 @@
             [clj-time.coerce :as tcoerce]
             [cheshire.generate :as json-enc]
             [mortimer.zip :as zip]
+            [mortimer.debug :as d]
             [mortimer.interval :as iv]
             [incanter.interpolation :as interp]))
 
@@ -118,6 +119,7 @@
             (println "No diag.log found in file" as))
           (when diag-counted 
             (swap! events assoc as (demangle/diag-parse diag-counted)))
+          (d/debug "Parsing stats from" statfile "in" zipfile)
           (swap! stats assoc as (demangle/stats-parse stats-counted))
           (when diag-counted
             (swap! timefns assoc as (localtime-index as)))

@@ -160,7 +160,10 @@
         (cli args
              ["-p" "--port" "Start webserver on this port" :parse-fn read-string :default 18334]
              ["-d" "--dir" "Directory to search for collectinfo .zips" :default "."]
+             ["-v" "--debug" "Enable debugging messages" :flag true]
              ["-h" "--help" "Display help" :flag true])]
+    (when (:debug opts)
+      (alter-var-root #'mortimer.debug/*debug* (constantly true)))
     (if (:help opts)
       (println usage)
       ;otherwise

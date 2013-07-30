@@ -3,6 +3,7 @@
   (:import [java.util TimeZone]
            java.text.SimpleDateFormat)
   (:require [clojure.java.io :as io]
+            [mortimer.debug :as d]
             [clj-time.format :as tformat]
             [clj-time.coerce :as tcoerce]))
 
@@ -23,6 +24,29 @@
 (def statslogdateformat
   (tformat/formatter "yyyy-MM-dd'T'HH:mm:ss.SSS"))
 
+(def oldstatslogdateformat
+  (tformat/formatter "yyyy-MM-dd HH:mm:ss"))
+
+(defn try-parse-20 [line]
+  (if-let [[_ localts bucket]
+           (re-matches
+             #"^\[stats:debug,([^,]+),.*Stats for bucket \"(.*)\".*$" line)]
+    [(-> (tformat/parse statslogdateformat localts)
+         tcoerce/to-long (/ 1000))
+     bucket]))
+
+(defn try-parse-181 [line]
+  (if-let [[_ localts bucket]
+           (re-matches
+             #"^\[stats:debug] \[([^\]]+)] .*Stats for bucket \"(.*)\".*$" line)]
+    [(-> (tformat/parse oldstatslogdateformat localts)
+         tcoerce/to-long (/ 1000))
+     bucket]))
+
+(defn try-parse [line]
+  (or (try-parse-20 line)
+      (try-parse-181 line)))
+
 (defn stats-parse
   "Given an input stream over a log file, searches for `Stats for bucket \"bucketname\"`
    sections and parses them, returns a map of buckets to lists
@@ -32,12 +56,8 @@
     (loop [lines (line-seq reader)
            stats {}]
       (if-let [line (first lines)]
-        (if-let [[_ localts bucket]
-                 (re-matches
-                   #"^\[stats:debug,([^,]+),.*Stats for bucket \"(.*)\".*$" line)]
-          (let [statlines (take-while (complement empty?) (rest lines))
-                localtime (-> (tformat/parse statslogdateformat localts)
-                              tcoerce/to-long (/ 1000))]
+        (if-let [[localtime bucket] (try-parse line)]
+          (let [statlines (take-while (complement empty?) (rest lines))]
             (recur
               (drop (count statlines) lines)
               (update-in stats [bucket]
