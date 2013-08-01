@@ -38,7 +38,7 @@ function FilesCtrl($scope, StatusService) {
   $scope.status = StatusService;
 }
 
-function DataCtrl($scope, $http, $log, $dialog, StatusService) {
+function DataCtrl($scope, $http, $log, $dialog, $timeout, StatusService) {
   $scope.status = StatusService;
   $scope.stats = [];
   $scope.$watch('status.remote.files', function() {
@@ -48,6 +48,14 @@ function DataCtrl($scope, $http, $log, $dialog, StatusService) {
      });
     }
   });
+
+  $scope.drawerOpen = true;
+  $scope.drawer = function() {
+    $scope.drawerOpen = !$scope.drawerOpen;
+    $timeout(function() {
+      g.resize();
+    }, 510)
+  }
 
   $scope.$watch('status.remote.loading', function() {
     $scope.loading = {};

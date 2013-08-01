@@ -1,18 +1,48 @@
 <div class="row-fluid">
-  <div class="span2" id="lthing">
-    <form class="form-search" id="statfilter">
-      <input class="input-small search-query" type="text" ng-model="statfilter"/>
-    </form>
+  <div class="span2" id="lthing" ng-class="{'lopen': drawerOpen, 'lclosed': !drawerOpen}">
+
     <button class="btn" id="save" ng-click="saveActiveStats()">
       <i class="icon-save"></i> Save Preset
     </button>
+    <button class="btn" id="drawer" ng-click="drawer()">
+      <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
+    </button>
+    <form class="form-search" id="statfilter">
+      <div class="input-prepend">
+        <span class="add-on"><i class="icon-search"></i></span>
+        <input class="search-query" type="text" ng-model="statfilter"/>
+      </div>
+    </form>
+
     <ul>
+      <li>Connect Gaps? <input type="checkbox" ng-model="connect"></li>
+      <li><b>Files</b></li>
+
+      <li ng-class="{'active': activeFile == i, 'efile': eventFile == i}" 
+      ng-click="clickFile(i, $event)"
+      ng-repeat="i in status.remote.files"><a>{{i}}</a></li>
+      <li class="filedisabled"  ng-repeat="(f, progress) in loading">
+        {{f}}
+        <progress percent="progress" auto-type="true" class="loaderbar"></progress>
+      </li>
+
+      <li class="sep"></li>
+
+      <li ng-class="{'hide': !status.remote.buckets.length}"><b>Buckets</b></li>
+
+      <li ng-class="{'active': activeBucket == i}" 
+      ng-click="set('activeBucket', i)"
+      ng-repeat="i in status.remote.buckets"><a>{{i}}</a></li>
+
+      <li class="sep" ng-class="{'hide': !status.remote.buckets.length}"></li>
+
       <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
       <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
         <a ng-click="applyPreset(preset, $event)"
         tooltip-placement="right"
         tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
       </li>
+
       <li ng-class="{'hide':(statfilter || !hasSaved())}"><b>Saved</b></li>
       <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in saved">
         <a ng-click="applyPreset(preset, $event)"
@@ -21,7 +51,9 @@
         <a class="removesaved"
         ng-click="deleteSaved(name)"><i class="icon-remove pull-right"></i></a>
       </li>
-      <li ng-class="{'hide':statfilter}"><hr></li>
+
+      <li ng-class="{'hide':statfilter}" class="sep"></li>
+
       <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
         <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
         ng-class="{'active': statOn(stat+':rate')}"
@@ -29,41 +61,14 @@
       </li>
     </ul>
   </div>
-  <div class="span10" id="rthing">
+  <div class="span10" id="rthing" ng-class="{'ropen': drawerOpen, 'rclosed': !drawerOpen}">
     <div id="graphlabels" class="pull-right">
-    </div>
-    <div>
-      <div class="scrollgroup">
-        Select File:
-        <div class="btn-group">
-          <button class="btn" ng-class="{'active': activeFile == i, 'btn-success': eventFile == i}" 
-            ng-click="clickFile(i, $event)"
-          ng-repeat="i in status.remote.files">{{i}}</button>
-          <button class="btn" disabled ng-repeat="(f, progress) in loading">
-            {{f}}
-            <progress percent="progress" auto-type="true" class="loaderbar"></progress>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="scrollgroup">
-        Select Bucket: ({{status.remote.buckets.length}})
-        <div class="btn-group">
-          <button class="btn" ng-class="{'active': activeBucket == i}" 
-          ng-click="set('activeBucket', i)" 
-          ng-repeat="i in status.remote.buckets">{{i}}</button>
-        </div>
-      </div>
     </div>
     <div class="pull-right loader" ng-class="{'hide': !updating}">
       <i class="icon-refresh icon-spin"></i>
     </div>
     <div class="pull-right loaderror" ng-class="{'hide': !errored}">
       <i class="icon-warning-sign"></i>
-    </div>
-    <div>
-      Connect Gaps? <input type="checkbox" ng-model="connect">
     </div>
     <div id="charthaver">
       <div id="chart">
