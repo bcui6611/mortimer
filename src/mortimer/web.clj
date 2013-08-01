@@ -102,9 +102,12 @@
     (doseq [d dudes]
       (lam/enqueue d message))))
 
+(def broadcast-channel (lam/permanent-channel))
 (defn ws-handler
   [ch handshake]
   (swap! connected-dudes conj ch)
+  (lam/siphon ch broadcast-channel)
+  (lam/siphon broadcast-channel ch)
   (lam/on-closed ch #(swap! connected-dudes disj ch))
   (send-update [ch]))
 

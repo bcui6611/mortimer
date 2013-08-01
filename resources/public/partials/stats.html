@@ -1,10 +1,13 @@
 <div class="row-fluid">
   <div class="span2" id="lthing" ng-class="{'lopen': drawerOpen, 'lclosed': !drawerOpen}">
 
-    <button class="btn" id="save" ng-click="saveActiveStats()">
+    <button class="btn topbtn" id="save" ng-click="saveActiveStats()">
       <i class="icon-save"></i> Save Preset
     </button>
-    <button class="btn" id="drawer" ng-click="drawer()">
+    <button class="btn topbtn" ng-model="master" btn-checkbox>
+      <i tooltip-placement="bottom" tooltip="Push view range to other windows" class="icon-upload"></i>
+    </button>
+    <button class="btn topbtn" id="drawer" ng-click="drawer()">
       <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
     </button>
     <form class="form-search" id="statfilter">
@@ -18,7 +21,7 @@
       <li>Connect Gaps? <input type="checkbox" ng-model="connect"></li>
       <li><b>Files</b></li>
 
-      <li ng-class="{'active': activeFile == i, 'efile': eventFile == i}" 
+      <li ng-class="{'lactive': activeFile == i, 'efile': eventFile == i}" 
       ng-click="clickFile(i, $event)"
       ng-repeat="i in status.remote.files"><a>{{i}}</a></li>
       <li class="filedisabled"  ng-repeat="(f, progress) in loading">
@@ -30,7 +33,7 @@
 
       <li ng-class="{'hide': !status.remote.buckets.length}"><b>Buckets</b></li>
 
-      <li ng-class="{'active': activeBucket == i}" 
+      <li ng-class="{'lactive': activeBucket == i}" 
       ng-click="set('activeBucket', i)"
       ng-repeat="i in status.remote.buckets"><a>{{i}}</a></li>
 
@@ -54,9 +57,9 @@
 
       <li ng-class="{'hide':statfilter}" class="sep"></li>
 
-      <li ng-repeat="stat in filteredStats()" ng-class="{'active': statOn(stat)}">
+      <li ng-repeat="stat in filteredStats()" ng-class="{'lactive': statOn(stat)}">
         <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-        ng-class="{'active': statOn(stat+':rate')}"
+        ng-class="{'lactive': statOn(stat+':rate')}"
         class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
       </li>
     </ul>

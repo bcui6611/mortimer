@@ -1,4 +1,7 @@
 var app = angular.module('mortimer', ['ui.bootstrap']);
+var graph = null;
+var clientid = (new Date()).getTime();
+var remoteUpdate = false;
 
 app.config(function($routeProvider, $locationProvider) {
   $routeProvider.
@@ -10,13 +13,27 @@ app.config(function($routeProvider, $locationProvider) {
 });
 
 app.factory('StatusService', function($rootScope) {
-  var status = {remote: {}};
   var mws = new WebSocket("ws://" + location.host + "/status-ws");
+  var status = {
+    remote: {},
+    broadcast: function(obj) {
+      mws.send(JSON.stringify(obj));
+    }
+  };
   mws.onmessage = function(evt) {
     var message = JSON.parse(evt.data);
     if(message.kind == "status-update") {
       status.remote = message.data;
       $rootScope.$apply();
+    }
+    if(message.kind == "range-update") {
+      if(graph && clientid != message.client) {
+        remoteUpdate = true;
+        graph.updateOptions({
+          dateWindow: message.range
+        });
+        remoteUpdate = false;
+      }
     }
   };
   return status;
@@ -228,6 +245,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     g.setAnnotations(toSet);
   }
 
+  $scope.master = false;
   var g = new Dygraph(chart, [[0,0]],
     {labels: ['Time', '?'],
      digitsAfterDecimal: 0,
@@ -258,8 +276,21 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
        syncAnnotations();
      },
      labelsSeparateLines: true,
-     labelsDiv: "graphlabels"
+     labelsDiv: "graphlabels",
+     drawCallback: function(me, initial) {
+       if(initial || remoteUpdate) return;
+       var range = me.xAxisRange();
+       var message = {
+         kind: 'range-update',
+         client: clientid,
+         range: range
+       };
+       if($scope.master) {
+         $scope.status.broadcast(message);
+       }
+     }
     });
+  graph = g;
   $scope.errored = false;
   function makechart() {
     if($scope.updating) {
