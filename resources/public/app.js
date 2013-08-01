@@ -38,7 +38,7 @@ function FilesCtrl($scope, StatusService) {
   $scope.status = StatusService;
 }
 
-function DataCtrl($scope, $http, $log, $dialog, $timeout, StatusService) {
+function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusService) {
   $scope.status = StatusService;
   $scope.stats = [];
   $scope.$watch('status.remote.files', function() {
@@ -56,6 +56,10 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, StatusService) {
       g.resize();
     }, 510)
   }
+
+  $timeout(function() {
+    g.resize();
+  }, 510);
 
   $scope.$watch('status.remote.loading', function() {
     $scope.loading = {};
