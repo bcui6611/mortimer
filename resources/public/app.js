@@ -173,11 +173,14 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, StatusService) {
   $scope.statfilter = '';
   $scope.filteredStats = function() {
     var stats = $scope.stats;
+    var selected = _.filter(stats, $scope.statOn);
+    var remain = _.difference(stats, selected);
     if($scope.statfilter == '') {
-      return stats;
+      return selected.concat(remain);
     }
     var results = fuzzy.filter($scope.statfilter, stats);
-    return results.map(function(el) { return el.string; });
+    var filtered = results.map(function(el) { return el.string; });
+    return selected.concat(_.difference(filtered, selected));
   }
 
   $scope.statOn = function(stat) {
