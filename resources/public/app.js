@@ -68,7 +68,6 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         return 100 * ( num / info.endsize );
       });
     });
-    console.log($scope.loading);
   });
 
   $scope.eventSets = [];
@@ -291,7 +290,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       }
     }).
     error(function(err) {
-      console.log(err);
+      $log.error(err);
       $scope.errored = true;
       $scope.updating = false;
     })
