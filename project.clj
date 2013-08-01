@@ -12,5 +12,6 @@
                  [clj-http "0.7.3"]
                  [commons-io "2.4"]
                  [compojure "1.1.5"]
+                 [me.raynes/conch "0.5.0"]
                  [ring/ring-devel "1.2.0-RC1"]
                  [org.clojure/tools.cli "0.2.2"]])

@@ -16,9 +16,12 @@
             [clj-http.client :as http]
             [ring.middleware.stacktrace :refer [wrap-stacktrace]]
             [lamina.core :as lam]
+            [me.raynes.conch :refer [programs]]
             [aleph.http :refer [start-http-server
                                 wrap-aleph-handler
                                 wrap-ring-handler]]))
+
+(programs open)
 
 (defn json-response
   "Transform `obj` to JSON and create a ring response object of it."
@@ -127,11 +130,15 @@
 
 (defonce server (atom nil))
 
-(defn start-server [{:keys [port]}]
+(defn start-server [{:keys [port browse]}]
   (reset! server (-> #'handler
                      wrap-ring-handler
                      (start-http-server {:port port :websocket true})))
-  (println (str "Listening on http://localhost:" port "/")))
+  (println (str "Listening on http://localhost:" port "/"))
+  (when browse
+    (try
+      (open (str "http://localhost:" port "/"))
+      (catch Exception e nil))))
 
 (defn check-update []
   (try 
@@ -161,8 +168,10 @@
              ["-p" "--port" "Start webserver on this port" :parse-fn read-string :default 18334]
              ["-d" "--dir" "Directory to search for collectinfo .zips" :default "."]
              ["-v" "--debug" "Enable debugging messages" :flag true]
+             ["-n" "--no-browse" "Don't auto open browser" :flag true :default true]
              ["-h" "--help" "Display help" :flag true])]
     (when (:debug opts)
+      (pprint opts)
       (alter-var-root #'mortimer.debug/*debug* (constantly true)))
     (if (:help opts)
       (println usage)
