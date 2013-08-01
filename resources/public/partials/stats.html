@@ -4,9 +4,11 @@
     <button class="btn topbtn" id="save" ng-click="saveActiveStats()">
       <i class="icon-save"></i> Save Preset
     </button>
-    <button class="btn topbtn" ng-model="master" btn-checkbox>
-      <i tooltip-placement="bottom" tooltip="Push view range to other windows" class="icon-upload"></i>
-    </button>
+    <span tooltip-placement="bottom" tooltip="Push view range to other windows">
+      <button class="btn topbtn" ng-model="master" btn-checkbox>
+        <i class="icon-upload"></i>
+      </button>
+    </span>
     <button class="btn topbtn" id="drawer" ng-click="drawer()">
       <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
     </button>
