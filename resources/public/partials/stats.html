@@ -1,70 +1,71 @@
 <div class="row-fluid">
-  <div class="span2" id="lthing" ng-class="{'lopen': drawerOpen, 'lclosed': !drawerOpen}">
-
-    <button class="btn topbtn" id="save" ng-click="saveActiveStats()">
-      <i class="icon-save"></i> Save Preset
-    </button>
-    <button class="btn topbtn" ng-model="master" btn-checkbox>
-      <i class="icon-upload"
+  <div id="lthingouter" ng-class="{'lopen': drawerOpen, 'lclosed': !drawerOpen}">
+    <div class="span2" id="lthing">
+      <button class="btn topbtn" id="save" ng-click="saveActiveStats()">
+        <i class="icon-save"></i> Save Preset
+      </button>
+      <button class="btn topbtn" ng-model="master" btn-checkbox>
+        <i class="icon-upload"
         tooltip-placement="bottom" tooltip="Push view range to other windows"
         ></i>
-    </button>
-    <button class="btn topbtn" id="drawer" ng-click="drawer()">
-      <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
-    </button>
-    <form class="form-search" id="statfilter">
-      <div class="input-prepend">
-        <span class="add-on"><i class="icon-search"></i></span>
-        <input class="search-query" type="text" ng-model="statfilter"/>
-      </div>
-    </form>
+      </button>
+      <button class="btn topbtn" id="drawer" ng-click="drawer()">
+        <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
+      </button>
+      <form class="form-search" id="statfilter">
+        <div class="input-prepend">
+          <span class="add-on"><i class="icon-search"></i></span>
+          <input class="search-query" type="text" ng-model="statfilter"/>
+        </div>
+      </form>
 
-    <ul>
-      <li>Connect Gaps? <input type="checkbox" ng-model="connect"></li>
-      <li><b>Files</b></li>
+      <ul>
+        <li>Connect Gaps? <input type="checkbox" ng-model="connect"></li>
+        <li><b>Files</b></li>
 
-      <li ng-class="{'lactive': activeFile == i, 'efile': eventFile == i}" 
-      ng-click="clickFile(i, $event)"
-      ng-repeat="i in status.remote.files"><a>{{i}}</a></li>
-      <li class="filedisabled"  ng-repeat="(f, progress) in loading">
-        {{f}}
-        <progress percent="progress" auto-type="true" class="loaderbar"></progress>
-      </li>
+        <li ng-class="{'lactive': activeFile == i, 'efile': eventFile == i}" 
+        ng-click="clickFile(i, $event)"
+        ng-repeat="i in status.remote.files"><a>{{i}}</a></li>
+        <li class="filedisabled"  ng-repeat="(f, progress) in loading">
+          {{f}}
+          <progress percent="progress" auto-type="true" class="loaderbar"></progress>
+        </li>
 
-      <li class="sep"></li>
+        <li class="sep"></li>
 
-      <li ng-class="{'hide': !status.remote.buckets.length}"><b>Buckets</b></li>
+        <li ng-class="{'hide': !status.remote.buckets.length}"><b>Buckets</b></li>
 
-      <li ng-class="{'lactive': activeBucket == i}" 
-      ng-click="set('activeBucket', i)"
-      ng-repeat="i in status.remote.buckets"><a>{{i}}</a></li>
+        <li ng-class="{'lactive': activeBucket == i}" 
+        ng-click="set('activeBucket', i)"
+        ng-repeat="i in status.remote.buckets"><a>{{i}}</a></li>
 
-      <li class="sep" ng-class="{'hide': !status.remote.buckets.length}"></li>
+        <li class="sep" ng-class="{'hide': !status.remote.buckets.length}"></li>
 
-      <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
-      <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
-        <a ng-click="applyPreset(preset, $event)"
-        tooltip-placement="right"
-        tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
-      </li>
+        <li ng-class="{'hide':statfilter}"><b>Presets</b></li>
+        <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
+          <a ng-click="applyPreset(preset, $event)"
+          tooltip-placement="right"
+          tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+        </li>
 
-      <li ng-class="{'hide':(statfilter || !hasSaved())}"><b>Saved</b></li>
-      <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in saved">
-        <a ng-click="applyPreset(preset, $event)"
-        tooltip-placement="right"
-        tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
-        <a class="removesaved"
-        ng-click="deleteSaved(name)"><i class="icon-remove pull-right"></i></a>
-      </li>
+        <li ng-class="{'hide':(statfilter || !hasSaved())}"><b>Saved</b></li>
+        <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in saved">
+          <a ng-click="applyPreset(preset, $event)"
+          tooltip-placement="right"
+          tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
+          <a class="removesaved"
+          ng-click="deleteSaved(name)"><i class="icon-remove pull-right"></i></a>
+        </li>
 
-      <li ng-class="{'hide':statfilter}" class="sep"></li>
+        <li ng-class="{'hide':statfilter}" class="sep"></li>
 
-      <li ng-repeat="stat in filteredStats()" ng-class="{'lactive': statOn(stat)}">
-        <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-        ng-class="{'lactive': statOn(stat+':rate')}"
-        class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
-      </li>
-    </ul>
+        <li ng-repeat="stat in filteredStats()" ng-class="{'lactive': statOn(stat)}">
+          <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
+          ng-class="{'lactive': statOn(stat+':rate')}"
+          class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
+        </li>
+      </ul>
+    </div>
   </div>
   <div class="span10" id="rthing" ng-class="{'ropen': drawerOpen, 'rclosed': !drawerOpen}">
     <div id="graphlabels" class="pull-right">
