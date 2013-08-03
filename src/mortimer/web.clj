@@ -73,7 +73,12 @@
                       (keyword stat)
                       (get-in @mdb/stats [file bucket]))
         pointseries (if (options :rate)
-                      (derivative pointseries)
+                      ;; Mark any points where the derivative of Uptime is negative as nil.
+                      ;; (they will show up as holes, rather than massively negative values.)
+                      (map (fn [[dt dv] [ut uv]]
+                             (if-not (neg? uv) [dt dv] [dt nil])) 
+                           (derivative pointseries)
+                           (derivative (mdb/extract :uptime (get-in @mdb/stats [file bucket]))))
                       pointseries)]
     pointseries))
 
