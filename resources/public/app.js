@@ -296,6 +296,9 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   graph = g;
   $scope.errored = false;
   function makechart() {
+    if(_.isEmpty($scope.activeStats)) {
+      return;
+    }
     if($scope.updating) {
       $scope.retrigger = true;
       return;
