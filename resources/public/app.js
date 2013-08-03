@@ -80,6 +80,12 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
 
   $scope.$watch('status.remote.loading', function() {
     $scope.loading = {};
+    if(_.isEmpty($scope.status.remote.loading)) {
+      $scope.activeFile = $scope.status.remote.files[0];
+      $scope.activeBucket = $scope.status.remote.buckets[0];
+      $scope.bucketCursor = 0;
+      $scope.fileCursor = 0;
+    }
     _.each($scope.status.remote.loading, function(info, k) {
       $scope.loading[k] = _.map(info.counted, function(num) {
         return 100 * ( num / info.endsize );
