@@ -250,6 +250,9 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     {labels: ['Time', '?'],
      digitsAfterDecimal: 0,
      connectSeparatedPoints: true,
+     // Selection from Colorbrewer set "Set1" from http://colorbrewer2.org/ 
+     // and https://github.com/mbostock/d3/blob/master/lib/colorbrewer/colorbrewer.js
+     colors: ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#a65628","#f781bf","#999999"],
      legend: 'always',
      axes: {
        y: {
