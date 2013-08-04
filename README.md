@@ -37,16 +37,46 @@ Each of these can be changed with command line flags.
 
     Usage:
     
-     Switches               Default  Desc
-     --------               -------  ----
-     -p, --port             18334    Start webserver on this port
-     -d, --dir              .        Directory to search for collectinfo .zips
-     -h, --no-help, --help  false    Display help
+     Switches                         Default  Desc
+     --------                         -------  ----
+     -p, --port                       18334    Start webserver on this port
+     -d, --dir                        .        Directory to search for collectinfo .zips
+     -v, --no-debug, --debug          false    Enable debugging messages
+     -n, --no-no-browse, --no-browse  true     Don't auto open browser
+     -h, --no-help, --help            false    Display help
 
 If loading files is slow (or you get an `OutOfMemoryError` exception),
 try giving the JVM more RAM:
 
-    java -Xmx2g -jar ~/path/to/mortimer.jar ...
+    java -Xmx2g -jar ~/path/to/mortimer.jar
+
+Adding the option `-Djava.awt.headless=true` to the `java` command line
+to prevent java from unecessarily adding an icon to your OSX dock.
+
+    java -Djava.awt.headless=true -jar ~/path/to/mortimer.jar
+
+It can be useful to keep mortimer in a well known location and create a
+shell alias to launch it:
+
+    wget -O ~/mortimer.jar http://s3.crate.im/mortimer-build/mortimer.jar
+
+And in your `.bashrc` or equivalent:
+
+    alias mortimer='java -Djava.awt.headless=true -jar ~/mortimer.jar'
+
+## Keyboard Shortcuts
+
+* `/` - focus search field, opening drawer if closed
+* `j`, `k` - choose next/previous stat
+* `cmd+j`, `cmd+k` - choose next/previous file
+* `shift+j`, `shift+k` - choose next/previous bucket
+* `enter` - chart stat at cursor
+* `cmd+enter` - add stat at cursor to chart
+* `r` - chart rate of stat at cursor
+* `cmd+r` - add rate of stat under at to chart
+* `>`, `<` - open or close drawer
+* `q` - toggle multi-window sync push from this window
+* `gg` - move cursor to top of stat list
 
 ## Charting stats
 
