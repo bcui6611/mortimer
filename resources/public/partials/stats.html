@@ -59,7 +59,8 @@
 
         <li ng-class="{'hide':statfilter}" class="sep"></li>
 
-        <li ng-repeat="stat in filteredStats()" ng-class="{'lactive': statOn(stat)}">
+        <li ng-repeat="stat in filteredStats()" 
+          ng-class="{'lactive': statOn(stat), 'cursored': ($index == cursorPos)}">
           <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
           ng-class="{'lactive': statOn(stat+':rate')}"
           class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
@@ -70,7 +71,10 @@
   <div class="span10" id="rthing" ng-class="{'ropen': drawerOpen, 'rclosed': !drawerOpen}">
     <div id="graphlabels" class="pull-right">
     </div>
-    <div class="pull-right loader" ng-class="{'hide': !updating}">
+    <div id="drawer-btn-inner" ng-class="{'hide': drawerOpen}">
+      <a ng-click="drawer()"><i class="icon-chevron-right"></i></a>
+    </div>
+    <div class="pull-left loader" ng-class="{'hide': !updating}">
       <i class="icon-refresh icon-spin"></i>
     </div>
     <div class="pull-right loaderror" ng-class="{'hide': !errored}">

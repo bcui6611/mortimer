@@ -56,6 +56,147 @@ function FilesCtrl($scope, StatusService) {
 }
 
 function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusService) {
+  var searchEl = document.getElementById('statsearchinput');
+  Mousetrap.bind('/', function(e) {
+    if(!$scope.drawerOpen) {
+      $scope.$apply($scope.drawer);
+    }
+    searchEl.focus();
+    searchEl.select();
+    return false;
+  });
+  // blur search field on Enter
+  $scope.statsearch = function() {
+    searchEl.blur();
+    $scope.cursorPos = 0;
+  }
+
+  Mousetrap.bind('d s', function() {
+    $scope.$apply(function() {
+      $scope.statfilter='';
+    })
+  });
+
+  Mousetrap.bind(['<','>'], function() {
+    $scope.$apply($scope.drawer);
+  });
+
+  Mousetrap.bind('q', function() {
+    $scope.$apply(function() {
+      $scope.master = !$scope.master;
+    });
+  });
+
+  var mtStatToggle = function(suffix, additive) {
+    return function(e) {
+      var stats = $scope.filteredStats();
+      var cursorPos = $scope.cursorPos;
+      $scope.$apply(function() {
+        if(cursorPos < 0 || cursorPos >= stats.length) return;
+        $scope.statclicked(stats[cursorPos] + suffix, {metaKey: additive});
+      });
+      return false;
+    }
+  };
+
+  //add selected stat
+  Mousetrap.bind('r', mtStatToggle(':rate', false));
+  //add selected stat rate
+  Mousetrap.bind('mod+r', mtStatToggle(':rate', true));
+  //change to selected stat
+  Mousetrap.bind('enter', mtStatToggle('', false));
+  //add selected stat rate
+  Mousetrap.bind('mod+enter', mtStatToggle('', true));
+
+  //stat cursor
+  Mousetrap.bind(['j', 'down'], function() {
+    $scope.$apply($scope.cursorDown);
+  });
+  Mousetrap.bind(['k', 'up'], function() {
+    $scope.$apply($scope.cursorUp);
+  });
+
+  Mousetrap.bind('g g', function() {
+    $scope.$apply(function() {
+      $scope.cursorPos = 0;
+    });
+  });
+
+  $scope.cursorPos = -1;
+  $scope.cursorDown = function() {
+    var numstats = $scope.filteredStats().length;
+    if($scope.cursorPos !== false) {
+      $scope.cursorPos++;
+      if($scope.cursorPos >= numstats) {
+        $scope.cursorPos--;
+      }
+    } else if(numstats > 0) {
+      $scope.cursorPos = 0;
+    }
+    console.log($scope.cursorPos);
+  }
+  $scope.cursorUp = function() {
+    var numstats = $scope.filteredStats().length;
+    if($scope.cursorPos !== false) {
+      $scope.cursorPos--;
+      if($scope.cursorPos < 0) {
+        $scope.cursorPos++;
+      }
+    } else if(numstats > 0) {
+      $scope.cursorPos = 0;
+    }
+  }
+
+  $scope.bucketCursor = -1;
+  Mousetrap.bind(['shift+j', 'shift+down'], function() {
+    $scope.bucketCursor++;
+    if($scope.bucketCursor >= $scope.status.remote.buckets.length) { 
+      $scope.bucketCursor = $scope.status.remote.buckets.length - 1;
+    }
+    var bucket;
+    if(bucket = $scope.status.remote.buckets[$scope.bucketCursor]) {
+      $scope.$apply(function(){
+        $scope.activeBucket = bucket;
+      });
+    }
+  });
+  Mousetrap.bind(['shift+k', 'shift+up'], function() {
+    $scope.bucketCursor--;
+    if($scope.bucketCursor < 0) { $scope.bucketCursor = 0; }
+    var bucket;
+    if(bucket = $scope.status.remote.buckets[$scope.bucketCursor]) {
+      $scope.$apply(function(){
+        $scope.activeBucket = bucket;
+      });
+    }
+  });
+
+
+  $scope.fileCursor = -1;
+  Mousetrap.bind(['mod+j', 'mod+down'], function() {
+    console.log($scope.fileCursor);
+    $scope.fileCursor++;
+    if($scope.fileCursor >= $scope.status.remote.files.length) { 
+      $scope.fileCursor = $scope.status.remote.files.length - 1;
+    }
+    var file;
+    if(file = $scope.status.remote.files[$scope.fileCursor]) {
+      $scope.$apply(function(){
+        $scope.activeFile = file;
+      });
+    }
+  });
+  Mousetrap.bind(['mod+k', 'mod+up'], function() {
+    $scope.fileCursor--;
+    if($scope.fileCursor < 0) { $scope.fileCursor = 0; }
+    var file;
+    if(file = $scope.status.remote.files[$scope.fileCursor]) {
+      $scope.$apply(function(){
+        $scope.activeFile = file;
+      });
+    }
+  });
+
   $scope.status = StatusService;
   $scope.stats = [];
   $scope.$watch('status.remote.files', function() {
