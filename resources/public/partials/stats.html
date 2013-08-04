@@ -4,7 +4,7 @@
       <button class="btn topbtn" id="save" ng-click="saveActiveStats()">
         <i class="icon-save"></i> Save Preset
       </button>
-      <button class="btn topbtn" ng-model="master" btn-checkbox>
+      <button class="btn topbtn" id="push" ng-model="master" btn-checkbox>
         <i class="icon-upload"
         tooltip-placement="bottom" tooltip="Push view range to other windows"
         ></i>
@@ -12,10 +12,10 @@
       <button class="btn topbtn" id="drawer" ng-click="drawer()">
         <i ng-class="{'icon-chevron-left': drawerOpen, 'icon-chevron-right': !drawerOpen}"></i>
       </button>
-      <form class="form-search" id="statfilter">
+      <form class="form-search" id="statfilter" ng-submit="statsearch()">
         <div class="input-prepend">
           <span class="add-on"><i class="icon-search"></i></span>
-          <input class="search-query" type="text" ng-model="statfilter"/>
+          <input class="search-query" id="statsearchinput" type="text" ng-model="statfilter"/>
         </div>
       </form>
 

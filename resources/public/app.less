@@ -11,6 +11,26 @@
     color: #999;
 }
 
+#push {
+    position: relative;
+    top: 0px;
+    left: 0px;
+}
+
+#drawer {
+    position: relative;
+    top: 0px;
+    left: 0px;
+}
+
+#drawer-btn-inner {
+    position: absolute;
+    top: 15px;
+    left: 4px;
+    font-size: 18px;
+    z-index: 8;
+}
+
 .removesaved {
     margin-right: 1em;
     :hover {
@@ -24,10 +44,6 @@
     margin-bottom: 6px;
     width: 180px;
     border-bottom: 2px solid #bbb;
-}
-
-#drawer {
-    float: right;
 }
 
 .loadm {
@@ -72,7 +88,7 @@
     overflow-x: hidden;
     height: 100%;
     position: relative;
-    padding-right: 30px;
+    padding-right: 20px;
 
     border-right: 2px solid #666;
 }
@@ -98,7 +114,7 @@
 }
 
 .lclosed {
-    .transform(translateX(-200px));
+    .transform(translateX(-220px));
 }
 
 .topbtn {
@@ -116,6 +132,8 @@
     position: fixed;
     height: 100%;
     width: 100%;
+    left: 0px;
+    top: 0px;
     margin: 0;
     z-index: 0;
     padding-right: 30px;
@@ -124,7 +142,7 @@
 
 .ropen {
     //.transform(translateX(180px));
-    padding-left: 200px;
+    padding-left: 220px;
 }
 
 .rclosed {
@@ -133,7 +151,7 @@
 }
 
 #charthaver {
-    margin-left: 10px;
+    margin-left: 0px;
     height: 100%;
     position: relative;
 }
