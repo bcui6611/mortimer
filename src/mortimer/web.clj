@@ -151,12 +151,18 @@
 (defn check-update []
   (try 
     (if-let [gitrev (s/trim (slurp (io/resource "git-rev.txt")))]
-      (if-let [currentrev (s/trim (slurp "http://s3.crate.im/mortimer-build/git-rev.txt"))]
+      (if-let [currentrev (-> "http://s3.crate.im/mortimer-build/git-rev.txt"
+                              (http/get {:socket-timeout 1000}
+                                        {:conn-timeout 1000})
+                              :body s/trim)]
         (if (= currentrev gitrev)
           (println "Up to date!")
           (let [diffs (:body  
                         (http/get (str "https://api.github.com/repos/couchbaselabs/mortimer/"
-                                       "compare/" gitrev "..." currentrev) {:as :json}))]
+                                       "compare/" gitrev "..." currentrev)
+                                  {:socket-timeout 1000
+                                   :conn-timeout 1000
+                                   :as :json}))]
             (if (= "ahead" (:status diffs))
               (do
                 (println "New version available! Changes:")
@@ -168,7 +174,8 @@
               (println "You have a newer version than is available for download."))))
         (println "Couldn't check for updated version"))
       (println "Unknown mortimer version"))
-    (catch Exception e "Couldn't check for updates")))
+    (catch Exception e 
+      (println "Couldn't check for updates" e))))
 
 (defn -main [& args]
   (let [[opts more usage]
@@ -176,7 +183,8 @@
              ["-p" "--port" "Start webserver on this port" :parse-fn read-string :default 18334]
              ["-d" "--dir" "Directory to search for collectinfo .zips" :default "."]
              ["-v" "--debug" "Enable debugging messages" :flag true]
-             ["-n" "--no-browse" "Don't auto open browser" :flag true :default true]
+             ["-u" "--update" "Check for updates" :flag true :default true]
+             ["-n" "--browse" "Auto open browser" :flag true :default true]
              ["-h" "--help" "Display help" :flag true])]
     (when (:debug opts)
       (pprint opts)
@@ -190,7 +198,7 @@
             numfiles (count files)
             numloaded (atom 0)
             messages (atom "")]
-        (check-update)
+        (when (:update opts) (check-update))
         (start-server opts)
         (mdb/progress-updater-start)
         (swap! mdb/progress-watchers conj

@@ -36,14 +36,15 @@ port 18334.
 Each of these can be changed with command line flags.
 
     Usage:
-    
-     Switches                         Default  Desc
-     --------                         -------  ----
-     -p, --port                       18334    Start webserver on this port
-     -d, --dir                        .        Directory to search for collectinfo .zips
-     -v, --no-debug, --debug          false    Enable debugging messages
-     -n, --no-no-browse, --no-browse  true     Don't auto open browser
-     -h, --no-help, --help            false    Display help
+
+      Switches                   Default  Desc
+      --------                   -------  ----
+      -p, --port                 18334    Start webserver on this port
+      -d, --dir                  .        Directory to search for collectinfo .zips
+      -v, --no-debug, --debug    false    Enable debugging messages
+      -u, --no-update, --update  true     Check for updates
+      -n, --no-browse, --browse  true     Auto open browser
+      -h, --no-help, --help      false    Display help   
 
 If loading files is slow (or you get an `OutOfMemoryError` exception),
 try giving the JVM more RAM:
