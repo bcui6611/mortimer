@@ -56,11 +56,22 @@
     {:stat stat
      :options kvmap}))
 
+(defn moving-average [pointseries window]
+  (let [vecseries (vec pointseries)] ; make sure we have fast random access
+    (for [n (range 0 (count pointseries))]
+      (let [samples (map second (map #(nth vecseries % nil) (range (- n window) (+ n window 1))))
+            orig (nth vecseries n)
+            [t _] orig]
+        (if (or (some nil? samples) (nil? (nth vecseries (- n window 1) nil))) 
+          [t nil]
+          [t (/ (apply + samples) (count samples))])))))
+
 (defn derivative [pointseries & interpargs]
   (let [interpargs (or interpargs [:linear])
-        interped (apply interp/interpolate pointseries interpargs)
+        derivseries (filter (complement (comp nil? second)) pointseries)
+        interped (apply interp/interpolate derivseries interpargs)
         derif (opt/derivative interped)]
-    (for [[t _] pointseries]
+    (for [[t v] pointseries]
       [t (derif (+ t 1/2))])))
 
 (defn create-pointseries
@@ -73,12 +84,18 @@
                       (keyword stat)
                       (get-in @mdb/stats [file bucket]))
         pointseries (if (options :rate)
-                      ;; Mark any points where the derivative of Uptime is negative as nil.
-                      ;; (they will show up as holes, rather than massively negative values.)
-                      (map (fn [[dt dv] [ut uv]]
-                             (if-not (neg? uv) [dt dv] [dt nil])) 
-                           (derivative pointseries)
-                           (derivative (mdb/extract :uptime (get-in @mdb/stats [file bucket]))))
+                      (let [uprate
+                            (-> (mdb/extract :uptime (get-in @mdb/stats [file bucket]))
+                                (moving-average 5)
+                                (derivative))]
+                        ;; Mark any points where the derivative of Uptime is negative as nil.
+                        ;; (they will show up as holes, rather than massively negative values.)
+                        (-> pointseries
+                            (moving-average 5)
+                            (derivative)
+                            (->> (map (fn [[ut uv] [dt dv]]
+                                        (if-not (neg? uv) [dt dv] [dt nil]))
+                                      uprate))))
                       pointseries)]
     pointseries))
 
