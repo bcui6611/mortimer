@@ -61,7 +61,7 @@
         interped (apply interp/interpolate pointseries interpargs)
         derif (opt/derivative interped)]
     (for [[t _] pointseries]
-      [t (derif t)])))
+      [t (derif (+ t 1/2))])))
 
 (defn create-pointseries
   [defaults query]
