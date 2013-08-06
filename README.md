@@ -68,6 +68,7 @@ And in your `.bashrc` or equivalent:
 ## Keyboard Shortcuts
 
 * `/` - focus search field, opening drawer if closed
+* `ds` - clear current search
 * `j`, `k` - choose next/previous stat
 * `cmd+j`, `cmd+k` - choose next/previous file
 * `shift+j`, `shift+k` - choose next/previous bucket
