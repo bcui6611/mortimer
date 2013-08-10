@@ -6,6 +6,7 @@
             [clojure.tools.cli :refer [cli]]
             [clojure.java.io :as io]
             [clojure.string :as s]
+            [clojure.core.memoize :as memo]
             [mortimer.data :as mdb]
             [mortimer.interval :as iv]
             [cheshire.core :as json]
@@ -74,8 +75,11 @@
     (for [[t v] pointseries]
       [t (derif (+ t 1/2))])))
 
-(defn create-pointseries
-  [defaults query]
+(defonce session-data 
+  (atom {:smoothing-window 0}))
+
+(defn create-pointseries*
+  [defaults query smoothing-window]
   (let [{:keys [stat options]} (parse-statqry query)
         options (merge defaults options)
         bucket (options :bucket)
@@ -86,18 +90,25 @@
         pointseries (if (options :rate)
                       (let [uprate
                             (-> (mdb/extract :uptime (get-in @mdb/stats [file bucket]))
-                                (moving-average 5)
+                                (moving-average smoothing-window)
                                 (derivative))]
                         ;; Mark any points where the derivative of Uptime is negative as nil.
                         ;; (they will show up as holes, rather than massively negative values.)
                         (-> pointseries
-                            (moving-average 5)
+                            (moving-average smoothing-window)
                             (derivative)
                             (->> (map (fn [[ut uv] [dt dv]]
                                         (if-not (neg? uv) [dt dv] [dt nil]))
                                       uprate))))
                       pointseries)]
-    pointseries))
+    (with-meta pointseries 
+               {:name (str stat (if (options :rate) " per second")
+                           " in " bucket " on " file)})))
+
+(def create-pointseries-memo* (memo/lru create-pointseries* :lru/threshold 100))
+
+(defn create-pointseries [defaults query]
+  (create-pointseries-memo* defaults query (:smoothing-window @session-data)))
 
 (defn multistat-response
   "Combine multiple stats, but only at real points"
@@ -107,31 +118,48 @@
      times (sort (distinct (map first (apply concat pointseries))))
      pointmaps (map (partial into {}) pointseries)
      pointfn (apply juxt pointmaps)]
-    {:stats (map #(s/escape % {\: " " \; " "}) stats)
+    {:stats (map (comp :name meta) pointseries)
      :interpolated false
      :points (for [t times]
                (into [(* t 1000)]
                      (pointfn t)))}))
 
-(defonce connected-dudes (atom #{}))
+(defonce broadcast-channel (lam/permanent-channel))
 
-(defn send-update [dudes]
+(defn send-update []
   (let [message (json/generate-string
                   {:kind :status-update
                    :data {:files (mdb/list-files)
                           :loading @mdb/progress
                           :buckets (mdb/list-buckets)}})]
-    (doseq [d dudes]
-      (lam/enqueue d message))))
+    (lam/enqueue broadcast-channel message)))
 
-(def broadcast-channel (lam/permanent-channel))
+(defn send-session [ch]
+  (lam/enqueue ch (json/generate-string {:kind "session-data" :data @session-data})))
+
+(defn ws-dispatch [ch msg]
+  (try (when-let [parsed (json/parse-string msg true)]
+         (case (:kind parsed)
+           ;; broadcast this message to all receivers
+           "range-update" (lam/enqueue broadcast-channel msg)
+           (do (println "Could not handle message.")
+               (pprint parsed))
+           "session-apply"
+           (let [action (read-string (:code parsed))
+                 code `(swap! session-data ~@action)]
+             (eval code)
+             (send-session broadcast-channel))))
+       (catch Exception e 
+         (println "Exception handling websocket message:" msg e)
+         (.printStackTrace e))))
+
+
 (defn ws-handler
   [ch handshake]
-  (swap! connected-dudes conj ch)
-  (lam/siphon ch broadcast-channel)
   (lam/siphon broadcast-channel ch)
-  (lam/on-closed ch #(swap! connected-dudes disj ch))
-  (send-update [ch]))
+  (lam/receive-all ch #(#'ws-dispatch ch %))
+  (send-session ch)
+  (send-update))
 
 (defroutes app-routes
   (GET "/files" [] (json-response (mdb/list-files)))
@@ -219,7 +247,7 @@
         (start-server opts)
         (mdb/progress-updater-start)
         (swap! mdb/progress-watchers conj
-               (fn [] (send-update @connected-dudes)))
+               (fn [] (send-update)))
         (print (str "Loading files... 0/" numfiles))
         (flush)
         ;; Load the found .zips file into the memory DB in parallel

@@ -16,7 +16,8 @@ app.factory('StatusService', function($rootScope) {
   var mws = new WebSocket("ws://" + location.host + "/status-ws");
   var status = {
     remote: {},
-    broadcast: function(obj) {
+    session: {},
+    send: function(obj) {
       mws.send(JSON.stringify(obj));
     }
   };
@@ -24,6 +25,10 @@ app.factory('StatusService', function($rootScope) {
     var message = JSON.parse(evt.data);
     if(message.kind == "status-update") {
       status.remote = message.data;
+      $rootScope.$apply();
+    }
+    if(message.kind == "session-data") {
+      status.session = message.data;
       $rootScope.$apply();
     }
     if(message.kind == "range-update") {
@@ -75,6 +80,22 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     $scope.$apply(function() {
       $scope.statfilter='';
     })
+  });
+  
+  Mousetrap.bind('p', function() {
+    $scope.status.send({
+      kind: "session-apply",
+      code: "(update-in [:smoothing-window] inc)"
+    });
+  });
+  Mousetrap.bind('o', function() {
+    $scope.status.send({
+      kind: "session-apply",
+      code: "(update-in [:smoothing-window] #(if (pos? %) (dec %) %))"
+    });
+  });
+  $scope.$watch("status.session['smoothing-window']", function() {
+    makechart();
   });
 
   Mousetrap.bind(['<','>'], function() {
@@ -221,7 +242,9 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
 
   $scope.$watch('status.remote.loading', function() {
     $scope.loading = {};
-    if(_.isEmpty($scope.status.remote.loading)) {
+    if(_.isEmpty($scope.status.remote.loading)
+       && $scope.status.remote
+       && $scope.status.remote.files) {
       $scope.activeFile = $scope.status.remote.files[0];
       $scope.activeBucket = $scope.status.remote.buckets[0];
       $scope.bucketCursor = 0;
@@ -436,7 +459,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
          range: range
        };
        if($scope.master) {
-         $scope.status.broadcast(message);
+         $scope.status.send(message);
        }
      }
     });

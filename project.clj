@@ -4,6 +4,7 @@
   :plugins [[lein-marginalia "0.7.1"]
             [org.timmc/lein-otf "2.0.1"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
+                 [org.clojure/core.memoize "0.5.6"]
                  [org.codehaus.jsr166-mirror/jsr166y "1.7.0"]
                  [incanter/incanter-core "1.5.1"]
                  [aleph "0.3.0-rc1"]

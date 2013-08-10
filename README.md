@@ -88,6 +88,8 @@ And in your `.bashrc` or equivalent:
 * `>`, `<` - open or close drawer
 * `q` - toggle multi-window sync push from this window
 * `gg` - move cursor to top of stat list
+* `p` - increase smoothing of rates
+* `o` - decrease smoothing of rates
 
 ## Charting stats
 
