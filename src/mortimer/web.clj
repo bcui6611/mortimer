@@ -9,6 +9,7 @@
             [clojure.core.memoize :as memo]
             [mortimer.data :as mdb]
             [mortimer.interval :as iv]
+            [mortimer.process :as proc]
             [cheshire.core :as json]
             [ring.util.response :as response]
             [compojure.handler :refer [api]]
@@ -30,91 +31,50 @@
   (-> (response/response (json/generate-string obj))
       (response/content-type "application/json; charset=utf-8")))
 
-(defn delist
-  "Takes a string of the form `\"thing1, thing2, thing3\"`, and returns
-   `[\"thing1\" \"thing2\" \"thing3\"]`, or nil if the string contains
-   only whitespace and commas."
-  [lstring]
-  (when lstring
-    (when-let [els (s/split lstring #",")]
-      (let [els (map s/trim els)]
-        (when-let [els (seq (remove empty? els))]
-          els)))))
-
-
 (defn parse-statqry
-  "Parses \"statname:opt;opt2=val2\" into
-   {:stat \"statname\" :options {:opt true :opt2 \"val2\"}}"
+  "Parses \"expr;k=v,k2=v2\" into
+   {:expr \"expr\" :context {:k \"v\" :k2 \"v2\"}}"
   [qstr]
-  (let [[_ stat rst kvs] (re-matches #"([^:]+)(:(.*))?" qstr)
-        kvparts (if kvs (s/split kvs #";") [])
-        kvmap (reduce (fn [acc kvstr]
-                        (let [[_ k _ v] (re-matches #"([^=]+)(=(.*))?" kvstr)]
-                          (if k
-                            (conj acc [(keyword k) (or v true)])
-                            acc)))
-                      {} kvparts)]
-    {:stat stat
-     :options kvmap}))
-
-(defn moving-average [pointseries window]
-  (let [vecseries (vec pointseries)] ; make sure we have fast random access
-    (for [n (range 0 (count pointseries))]
-      (let [samples (map second (map #(nth vecseries % nil) (range (- n window) (+ n window 1))))
-            orig (nth vecseries n)
-            [t _] orig]
-        (if (or (some nil? samples) (nil? (nth vecseries (- n window 1) nil))) 
-          [t nil]
-          [t (/ (apply + samples) (count samples))])))))
-
-(defn derivative [pointseries & interpargs]
-  (let [interpargs (or interpargs [:linear])
-        derivseries (filter (complement (comp nil? second)) pointseries)
-        interped (apply interp/interpolate derivseries interpargs)
-        derif (opt/derivative interped)]
-    (for [[t v] pointseries]
-      [t (derif (+ t 1/2))])))
+  (let [[_ expr optstring] (re-matches #"^([^;]+);(.*)$" qstr)
+        pairstrings (s/split optstring #",")
+        ctx (into {}
+                  (map (fn [ps]
+                         (let [[k v] (s/split ps #"=")]
+                           [(keyword k) v]))
+                       pairstrings))]
+    {:expr expr
+     :context ctx}))
 
 (defonce session-data 
   (atom {:smoothing-window 0}))
 
 (defn create-pointseries*
-  [defaults query smoothing-window]
-  (let [{:keys [stat options]} (parse-statqry query)
-        options (merge defaults options)
-        bucket (options :bucket)
-        file (options :file)
-        pointseries (mdb/extract
-                      (keyword stat)
-                      (get-in @mdb/stats [file bucket]))
-        pointseries (if (options :rate)
-                      (let [uprate
-                            (-> (mdb/extract :uptime (get-in @mdb/stats [file bucket]))
-                                (moving-average smoothing-window)
-                                (derivative))]
-                        ;; Mark any points where the derivative of Uptime is negative as nil.
-                        ;; (they will show up as holes, rather than massively negative values.)
-                        (-> pointseries
-                            (moving-average smoothing-window)
-                            (derivative)
-                            (->> (map (fn [[ut uv] [dt dv]]
-                                        (if-not (neg? uv) [dt dv] [dt nil]))
-                                      uprate))))
-                      pointseries)]
-    (with-meta pointseries 
-               {:name (str stat (if (options :rate) " per second")
-                           " in " bucket " on " file)})))
+  [session-context query]
+  (let [{:keys [expr context]} (parse-statqry query)
+        context (merge session-context context)]
+    (try (with-meta (proc/expr-eval-string expr context)
+               {:name 
+                (str (or (:name context) expr)
+                     " in " (:bucket context) " on " (:file context))})
+         (catch Exception e
+           (lam/enqueue broadcast-channel
+                       (json/generate-string 
+                         {:kind :error
+                          :short (str (.getMessage e))
+                          :extra (when-let [d (ex-data e)]
+                                   (:extra d))}))
+           nil))))
 
 (def create-pointseries-memo* (memo/lru create-pointseries* :lru/threshold 100))
 
-(defn create-pointseries [defaults query]
-  (create-pointseries-memo* defaults query (:smoothing-window @session-data)))
+(defn create-pointseries [context query]
+  (create-pointseries-memo* context query))
 
 (defn multistat-response
   "Combine multiple stats, but only at real points"
   [stats]
   (let
-    [pointseries (map (partial create-pointseries {}) stats)
+    [pointseries (keep (partial create-pointseries @session-data) stats)
      times (sort (distinct (map first (apply concat pointseries))))
      pointmaps (map (partial into {}) pointseries)
      pointfn (apply juxt pointmaps)]
@@ -167,7 +127,7 @@
   (GET "/stats" [] (json-response (mdb/list-stats)))
   (GET "/events" [file] (json-response (mdb/get-events file)))
   (GET "/statdata" {{stats :stat} :params}
-       (let [stats (delist stats)]
+       (let [stats (json/parse-string stats)]
          (json-response (multistat-response stats))))
   (GET "/status-ws" {}
        (wrap-aleph-handler ws-handler))
@@ -176,8 +136,17 @@
   (route/resources "/")
   (route/not-found "404!"))
 
+(defn wrap-warns [h]
+  (fn [rq]
+    (binding [proc/*messages* (atom [])] 
+      (let [response (h rq)]
+        (doseq [m @proc/*messages*]
+          (lam/enqueue broadcast-channel (json/generate-string m)))
+        response))))
+
 (def handler
   (-> #'app-routes
+      wrap-warns
       api
       wrap-stacktrace))
 

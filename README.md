@@ -90,6 +90,38 @@ And in your `.bashrc` or equivalent:
 * `gg` - move cursor to top of stat list
 * `p` - increase smoothing of rates
 * `o` - decrease smoothing of rates
+* `` ` `` - add a stat using a stat expression
+
+## stat expressions
+
+You can hit the backtick key to enter an *expression* to add to the
+charting area.
+
+### Examples
+
+Plot a single stat:
+
+    cmd_get
+
+Plot the rate of a single stat:
+
+    rate(cmd_get)
+
+Or the second derivative:
+
+    rate(rate(cmd_get))
+
+Plot the sum of two stats:
+
+    cmd_get + cmd_set
+
+Memory remaining before reaching 90% of `ep_max_data_size`:
+
+    (ep_max_data_size * 0.9) - mem_used
+
+**NOTE**: Order-of-operations (PEMDAS) is currently *not* followed. If
+you use `-` or `/`, which are not associative, you should use
+parentheses to indicate the intended order of evaluation.
 
 ## Charting stats
 

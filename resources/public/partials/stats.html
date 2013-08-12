@@ -62,8 +62,8 @@
         <li ng-repeat="stat in filteredStats()" 
           ng-class="{'lactive': statOn(stat), 'cursored': ($index == cursorPos)}">
           <a ng-click="statclicked(stat, $event)">{{stat}}</a> <a 
-          ng-class="{'lactive': statOn(stat+':rate')}"
-          class="dyx" ng-click="statclicked(stat+':rate', $event)">rate</a>
+          ng-class="{'lactive': statOn('rate(' + stat + ')')}"
+          class="dyx" ng-click="statclicked('rate(' + stat + ')', $event)">rate</a>
         </li>
       </ul>
     </div>

@@ -7,6 +7,7 @@
                  [org.clojure/core.memoize "0.5.6"]
                  [org.codehaus.jsr166-mirror/jsr166y "1.7.0"]
                  [incanter/incanter-core "1.5.1"]
+                 [instaparse "1.2.2"]
                  [aleph "0.3.0-rc1"]
                  [cheshire "5.2.0"]
                  [clj-time "0.5.1"]

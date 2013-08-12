@@ -12,6 +12,10 @@ app.config(function($routeProvider, $locationProvider) {
   otherwise({ redirectTo: '/stats/'});
 });
 
+toastr.options = {
+  timeOut: 10000
+};
+
 app.factory('StatusService', function($rootScope) {
   var mws = new WebSocket("ws://" + location.host + "/status-ws");
   var status = {
@@ -23,15 +27,16 @@ app.factory('StatusService', function($rootScope) {
   };
   mws.onmessage = function(evt) {
     var message = JSON.parse(evt.data);
-    if(message.kind == "status-update") {
+    var kind = message.kind;
+    if(kind == "status-update") {
       status.remote = message.data;
       $rootScope.$apply();
     }
-    if(message.kind == "session-data") {
+    if(kind == "session-data") {
       status.session = message.data;
       $rootScope.$apply();
     }
-    if(message.kind == "range-update") {
+    if(kind == "range-update") {
       if(graph && clientid != message.client) {
         remoteUpdate = true;
         graph.updateOptions({
@@ -40,6 +45,16 @@ app.factory('StatusService', function($rootScope) {
         remoteUpdate = false;
       }
     }
+    if(kind == "error" || kind == "warning") {
+      if(message.extra) {
+        toastr[kind](message.short);
+        var toast = $("<div>").append($("<pre>").text(message.extra)).html();
+        toastr[kind](toast);
+      } else {
+        toastr[kind](message.short);
+      }
+    }
+
   };
   return status;
 })
@@ -50,6 +65,40 @@ function SaveDialogCtrl($scope, dialog) {
       name: $scope.pname
     })
   };
+
+  $scope.cancel = function() {
+    dialog.close();
+  }
+}
+
+function AddExprDialogCtrl($scope, $timeout, dialog) {
+  $timeout(function() {
+    var exprEl = document.getElementById('exprentry');
+    if(exprEl) {
+      exprEl.focus();
+    }
+  }, 10);
+  $scope.add = function() {
+    var stat = $scope.expr;
+    if($scope.name) {
+      stat += ";name=" + $scope.name;
+    }
+    dialog.close({
+      stat: stat,
+      replace: false
+    });
+  }
+
+  $scope.replace = function() {
+    var stat = $scope.expr;
+    if($scope.name) {
+      stat += ";name=" + $scope.name;
+    }
+    dialog.close({
+      stat: stat,
+      replace: true
+    });
+  }
 
   $scope.cancel = function() {
     dialog.close();
@@ -108,26 +157,51 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     });
   });
 
-  var mtStatToggle = function(suffix, additive) {
+  var mtStatToggle = function(fun, additive) {
     return function(e) {
       var stats = $scope.filteredStats();
       var cursorPos = $scope.cursorPos;
       $scope.$apply(function() {
+        var stat = stats[cursorPos];
+        if(fun) {
+          stat = fun + '(' + stat + ')';
+        }
         if(cursorPos < 0 || cursorPos >= stats.length) return;
-        $scope.statclicked(stats[cursorPos] + suffix, {metaKey: additive});
+        $scope.statclicked(stat, {metaKey: additive});
       });
       return false;
     }
   };
 
   //add selected stat
-  Mousetrap.bind('r', mtStatToggle(':rate', false));
+  Mousetrap.bind('r', mtStatToggle('rate', false));
   //add selected stat rate
-  Mousetrap.bind('mod+r', mtStatToggle(':rate', true));
+  Mousetrap.bind('mod+r', mtStatToggle('rate', true));
   //change to selected stat
-  Mousetrap.bind('enter', mtStatToggle('', false));
+  Mousetrap.bind('enter', mtStatToggle(null, false));
   //add selected stat rate
-  Mousetrap.bind('mod+enter', mtStatToggle('', true));
+  Mousetrap.bind('mod+enter', mtStatToggle(null, true));
+
+  //add stat by expression
+  Mousetrap.bind('`', function() {
+    $scope.$apply(function() {
+      var dia = $dialog.dialog({
+        backdrop: true,
+        templateUrl: 'partials/exprdialog.html',
+        controller: 'AddExprDialogCtrl'
+      }).open();
+
+      dia.then(function(result) {
+        if(!result) {
+          return;
+        }
+        if(result.replace) {
+          $scope.activeStats = {};
+        }
+        setupstat(result.stat, true);
+      });
+    });
+  });
 
   //stat cursor
   Mousetrap.bind(['j', 'down'], function() {
@@ -303,7 +377,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         return;
       }
       var active = _.map($scope.activeStats, function(v, k) {
-        var stat = k.match(/^[^:]+(:rate)?/);
+        var stat = k.match(/^[^;]+(;.*)?/);
         return stat[0];
       })
       $scope.saved[result.name] = active;
@@ -376,17 +450,14 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   $scope.statOn = function(stat) {
     for(s in $scope.activeStats) {
       if( s == stat || 
-          s.indexOf(stat + ':') == 0 ||
-          s.indexOf(stat + ';') == 0) {
+          s.indexOf(stat + ';') == 0 ||
+          s.indexOf('rate(' + stat + ');') == 0) {
         return true;
       }
     }
     return false;
   }
 
-  function toCS(ob) {
-    return _(ob).keys().join(',');
-  }
   var annotid = 0;
   var annotations = [];
   function syncAnnotations() {
@@ -475,7 +546,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     }
     $scope.updating = true;
     $http.get('/statdata', {params: {
-      stat: toCS($scope.activeStats)
+      stat: JSON.stringify(_.keys($scope.activeStats))
     }}).
     success(function(data) {
       $scope.errored = false;
@@ -506,16 +577,16 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   var setupstat = function(stat, add) {
     if(!($scope.activeBucket && $scope.activeFile)) {
       $log.error("Must have a bucket and file selected!");
-      $dialog.messageBox("Error", "You must have a bucket and file selected!", [{label:'OK', result: true}]).open();
+      toastr.error('You must have a bucket and file selected to add a stat!');
       return false;
     }
-    if(stat.indexOf(':') < 0) { 
-      stat += ':'
+    if(stat.indexOf(';') < 0) {
+      stat += ';';
     } else {
-      stat += ';'
+      stat += ',';
     }
     stat += "bucket=" + $scope.activeBucket;
-    stat += ";file=" + $scope.activeFile;
+    stat += ",file=" + $scope.activeFile;
     if(add) {
       $scope.toggle('activeStats', stat);
     } else {
@@ -529,8 +600,8 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     'memory': ['ep_mem_high_wat', 'mem_used', 'ep_mem_low_wat', 'ep_max_data_size',
                'ep_meta_data_memory', 'ep_value_size'],
     'resident ratios': ['vb_active_perc_mem_resident', 'vb_replica_perc_mem_resident'],
-    'operations': ['cmd_get:rate', 'cmd_set:rate', 'delete_hits:rate', 'delete_misses:rate',
-                   'ep_tmp_oom_errors:rate']
+    'operations': ['rate(cmd_get)', 'rate(cmd_set)', 'rate(delete_hits)', 'rate(delete_misses)',
+                   'rate(ep_tmp_oom_errors)']
   };
   $scope.applyPreset = function(preset, e) {
     if(!(e.ctrlKey || e.metaKey)) {
