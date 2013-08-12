@@ -53,8 +53,8 @@
           <a ng-click="applyPreset(preset, $event)"
           tooltip-placement="right"
           tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
-          <a class="removesaved"
-          ng-click="deleteSaved(name)"><i class="icon-remove pull-right"></i></a>
+          <a class="removesaved pull-right"
+          ng-click="deleteSaved(name)"><i class="icon-remove"></i></a>
         </li>
 
         <li ng-class="{'hide':statfilter}" class="sep"></li>

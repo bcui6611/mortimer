@@ -375,8 +375,9 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         return;
       }
       var active = _.map($scope.activeStats, function(v, k) {
-        var stat = k.match(/^[^;]+(;.*)?/);
-        return stat[0];
+        var stat = k.match(/^([^;]+(;name=[^,]+)?)([;,].*)?/);
+        console.log(stat)
+        return stat[1];
       })
       $scope.saved[result.name] = active;
       saveSaved();
