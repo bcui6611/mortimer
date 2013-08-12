@@ -67,7 +67,12 @@
                              (if-not (neg? uv) [dt dv] [dt nil]))
                            uprate)))))})
 
-(def oper-fun-table {"+" + "-" - "*" * "/" /})
+(def oper-fun-table {"+" + 
+                     "-" - 
+                     "*" * 
+                     "/" (fn [numer div]
+                           (if (zero? div) nil
+                             (/ numer div)))})
 
 (defn apply-operator-series
   "Apply operator to two series (two series must be from the same bucket/file!)"
