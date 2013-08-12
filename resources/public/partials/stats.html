@@ -45,6 +45,7 @@
         <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in presets">
           <a ng-click="applyPreset(preset, $event)"
           tooltip-placement="right"
+          tooltip-append-to-body="true"
           tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
         </li>
 
@@ -52,6 +53,7 @@
         <li ng-class="{'hide':statfilter}" ng-repeat="(name, preset) in saved">
           <a ng-click="applyPreset(preset, $event)"
           tooltip-placement="right"
+          tooltip-append-to-body="true"
           tooltip-html-unsafe="{{presetStats(preset)}}">{{name}}</a>
           <a class="removesaved pull-right"
           ng-click="deleteSaved(name)"><i class="icon-remove"></i></a>
