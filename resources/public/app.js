@@ -186,7 +186,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   Mousetrap.bind('`', function() {
     $scope.$apply(function() {
       var dia = $dialog.dialog({
-        backdrop: true,
+        backdrop: false,
         templateUrl: 'partials/exprdialog.html',
         controller: 'AddExprDialogCtrl'
       }).open();
