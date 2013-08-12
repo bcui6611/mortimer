@@ -228,7 +228,6 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     } else if(numstats > 0) {
       $scope.cursorPos = 0;
     }
-    console.log($scope.cursorPos);
   }
   $scope.cursorUp = function() {
     var numstats = $scope.filteredStats().length;
@@ -269,7 +268,6 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
 
   $scope.fileCursor = -1;
   Mousetrap.bind(['mod+j', 'mod+down'], function() {
-    console.log($scope.fileCursor);
     $scope.fileCursor++;
     if($scope.fileCursor >= $scope.status.remote.files.length) { 
       $scope.fileCursor = $scope.status.remote.files.length - 1;
