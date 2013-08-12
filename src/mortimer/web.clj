@@ -23,6 +23,8 @@
                                 wrap-aleph-handler
                                 wrap-ring-handler]]))
 
+(defonce broadcast-channel (lam/permanent-channel))
+
 (programs open)
 
 (defn json-response
@@ -83,8 +85,6 @@
      :points (for [t times]
                (into [(* t 1000)]
                      (pointfn t)))}))
-
-(defonce broadcast-channel (lam/permanent-channel))
 
 (defn send-update []
   (let [message (json/generate-string
