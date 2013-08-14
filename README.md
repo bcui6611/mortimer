@@ -78,32 +78,32 @@ And in your `.bashrc` or equivalent:
 
 * `/` - focus search field, opening drawer if closed
 * `ds` - clear current search
-* `j`, `k` - choose next/previous stat
+* `j`, `k` - choose next/previous series
 * `cmd+j`, `cmd+k` - choose next/previous file
 * `shift+j`, `shift+k` - choose next/previous bucket
-* `enter` - chart stat at cursor
-* `cmd+enter` - add stat at cursor to chart
-* `r` - chart rate of stat at cursor
-* `cmd+r` - add rate of stat under at to chart
+* `enter` - chart series at cursor
+* `cmd+enter` - add series at cursor to chart
+* `r` - chart rate of series at cursor
+* `cmd+r` - add rate of series under at to chart
 * `>`, `<` - open or close drawer
 * `q` - toggle multi-window sync push from this window
-* `gg` - move cursor to top of stat list
+* `gg` - move cursor to top of series list
 * `p` - increase smoothing of rates
 * `o` - decrease smoothing of rates
-* `` ` `` - add a stat using a stat expression
+* `` ` `` - add a series using a series expression
 
-## stat expressions
+## Expressions
 
 You can hit the backtick key to enter an *expression* to add to the
 charting area.
 
 ### Examples
 
-Plot a single stat:
+Plot a single series:
 
     cmd_get
 
-Plot the rate of a single stat:
+Plot the rate of a single series:
 
     rate(cmd_get)
 
@@ -111,7 +111,7 @@ Or the second derivative:
 
     rate(rate(cmd_get))
 
-Plot the sum of two stats:
+Plot the sum of two series:
 
     cmd_get + cmd_set
 
@@ -119,54 +119,35 @@ Memory remaining before reaching 90% of `ep_max_data_size`:
 
     (ep_max_data_size * 0.9) - mem_used
 
-**NOTE**: Order-of-operations (PEMDAS) is currently *not* followed. If
-you use `-` or `/`, which are not associative, you should use
-parentheses to indicate the intended order of evaluation.
+**NOTE**: Order-of-operations is currently *not* followed. If
+you use `-` or `/`, you should use parentheses to indicate 
+the intended order of evaluation.
 
-## Charting stats
+## Charting series
 
-Start by selecting a file and bucket to pull stats information from:
-
-![](docimg/filebucket.png)
-
-Click the name of the stat you want to chart:
-
-![](docimg/statnames.png)
-
-And that stat will be plotted in the chart area:
-
-![](docimg/statview.png)
+Click the name of the series you want to chart, and that series will be
+plotted in the chart area.
 
 You can click and drag on the chart to zoom in, hold Shift to pan, and
 double click to reset the zoom level.
 
-## Showing rates
+You can click "rate" next to a series to plot its rate of change.
 
-Some stats track totals, such as total number of bytes, or operations.
+## Showing multiple lines
 
-![](docimg/cmdget.png)
+You can hold down the Command or Control keys while clicking on series to
+add multiple series to the chart.
 
-You can click "rate" next to a stat to plot its rate of change.
-
-![](docimg/rate.png)
-
-![](docimg/getrate.png)
-
-## Multiple stats
-
-You can hold down the Command or Control keys while clicking on stats to
-add multiple stats to the chart.
-
-![](docimg/multi.png)
+You can compare a series across files or buckets by clicking a series,
+selecting a new file or bucket, and Command/Control clicking the series
+again.
 
 ## Presets
 
-Mortimer comes with preset combinations of stat selections that are
+Mortimer comes with preset combinations of series selections that are
 commonly useful.
 
-![](docimg/presets.png)
-
-You can also *save* your current selection of stats as a preset using the
+You can also *save* your current selection of series as a preset using the
 Save Preset button.
 
 ## Setting Markers
@@ -174,9 +155,7 @@ Save Preset button.
 You can hold Command or Control and click on the chart, to place a
 marker.
 
-![](docimg/markers.png)
-
-Markers will stay on the chart while selecting different stats, allowing
+Markers will stay on the chart while selecting different series, allowing
 you to keep track of significant points in time as you explore data.
 
 You can hold Shift and click on a marker to delete it.
