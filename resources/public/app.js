@@ -203,6 +203,14 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     });
   });
 
+  Mousetrap.bind('?', function() {
+    $scope.$apply(function() {
+      $dialog.dialog({
+        templateUrl: 'partials/README.html'
+      }).open();
+    });
+  });
+
   //stat cursor
   Mousetrap.bind(['j', 'down'], function() {
     $scope.$apply($scope.cursorDown);

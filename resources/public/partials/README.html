@@ -1,0 +1,197 @@
+<div id="readme">
+<h1>
+<a name="mortimer" class="anchor" href="#mortimer"><span class="octicon octicon-link"></span></a>mortimer</h1>
+
+<p><a href="https://drone.io/github.com/couchbaselabs/mortimer/latest"><img src="https://drone.io/github.com/couchbaselabs/mortimer/status.png" alt="Build Status" style="max-width:100%;"></a></p>
+
+<p>Currently I can</p>
+
+<ul>
+<li>Read ep_engine stat information from <code>ns_server.stats.log</code> in <code>cbcollect_info</code> zip files (2.0+)</li>
+<li>Graph those on a Web UI</li>
+</ul><p>TODOs: <a href="http://cbugg.hq.couchbase.com/search/tags:mortimer%20AND%20status:(inbox%20OR%20new%20OR%20open%20OR%20inprogress)">see tag <code>mortimer</code> on cbugg</a></p>
+
+<p>File feature requests and bugs on
+<a href="http://cbugg.hq.couchbase.com/">cbugg</a>, and tag them <code>mortimer</code></p>
+
+<p>Download the .jar at <a href="http://s3.crate.im/mortimer-build/mortimer.jar">http://s3.crate.im/mortimer-build/mortimer.jar</a></p>
+
+<p>Documented Clojure code at <a href="http://s3.crate.im/mortimer-build/mortimer-doc.html">http://s3.crate.im/mortimer-build/mortimer-doc.html</a></p>
+
+<p>To run from a git checkout, install <a href="https://github.com/technomancy/leiningen">Leiningen</a>. Now any
+<code>java -jar ~/path/to/mortimer.jar</code> command below can be replaced with
+typing <code>lein run --</code> in the checkout
+directory:</p>
+
+<pre><code>lein run -- -d /my/directory/of/zips
+</code></pre>
+
+<h1>
+<a name="how-to-use" class="anchor" href="#how-to-use"><span class="octicon octicon-link"></span></a>How to Use</h1>
+
+<h2>
+<a name="starting-mortimer" class="anchor" href="#starting-mortimer"><span class="octicon octicon-link"></span></a>Starting mortimer</h2>
+
+<p>Mortimer is a JVM application. Download the .jar, and place it in a
+well known location.</p>
+
+<p>To run it, type</p>
+
+<pre><code>java -jar ~/path/to/mortimer.jar
+</code></pre>
+
+<p>By default, the current working directory will be searched for
+<code>cbcollect_info</code> ZIP files, and the mortimer web UI will be started on
+port 18334.</p>
+
+<p>Each of these can be changed with command line flags.</p>
+
+<pre><code>Usage:
+
+  Switches                   Default  Desc
+  --------                   -------  ----
+  -p, --port                 18334    Start webserver on this port
+  -d, --dir                  .        Directory to search for collectinfo .zips
+  -v, --no-debug, --debug    false    Enable debugging messages
+  -u, --no-update, --update  true     Check for updates
+  -n, --no-browse, --browse  true     Auto open browser
+  -h, --no-help, --help      false    Display help   
+</code></pre>
+
+<p>If loading files is slow (or you get an <code>OutOfMemoryError</code> exception),
+try giving the JVM more RAM:</p>
+
+<pre><code>java -Xmx2g -jar ~/path/to/mortimer.jar
+</code></pre>
+
+<p>Adding the option <code>-Djava.awt.headless=true</code> to the <code>java</code> command line
+to prevent java from unecessarily adding an icon to your OSX dock.</p>
+
+<pre><code>java -Djava.awt.headless=true -jar ~/path/to/mortimer.jar
+</code></pre>
+
+<p>It can be useful to keep mortimer in a well known location and create a
+shell alias to launch it:</p>
+
+<pre><code>wget -O ~/mortimer.jar http://s3.crate.im/mortimer-build/mortimer.jar
+</code></pre>
+
+<p>And in your <code>.bashrc</code> or equivalent:</p>
+
+<pre><code>alias mortimer='java -Djava.awt.headless=true -jar ~/mortimer.jar'
+</code></pre>
+
+<h2>
+<a name="keyboard-shortcuts" class="anchor" href="#keyboard-shortcuts"><span class="octicon octicon-link"></span></a>Keyboard Shortcuts</h2>
+
+<ul>
+<li>
+<code>/</code> - focus search field, opening drawer if closed</li>
+<li>
+<code>ds</code> - clear current search</li>
+<li>
+<code>j</code>, <code>k</code> - choose next/previous series</li>
+<li>
+<code>cmd+j</code>, <code>cmd+k</code> - choose next/previous file</li>
+<li>
+<code>shift+j</code>, <code>shift+k</code> - choose next/previous bucket</li>
+<li>
+<code>enter</code> - chart series at cursor</li>
+<li>
+<code>cmd+enter</code> - add series at cursor to chart</li>
+<li>
+<code>r</code> - chart rate of series at cursor</li>
+<li>
+<code>cmd+r</code> - add rate of series under at to chart</li>
+<li>
+<code>&gt;</code>, <code>&lt;</code> - open or close drawer</li>
+<li>
+<code>q</code> - toggle multi-window sync push from this window</li>
+<li>
+<code>gg</code> - move cursor to top of series list</li>
+<li>
+<code>p</code> - increase smoothing of rates</li>
+<li>
+<code>o</code> - decrease smoothing of rates</li>
+<li>
+<code>`</code> - add a series using a series expression</li>
+<li>
+<code>?</code> - display this README</li>
+</ul><h2>
+<a name="expressions" class="anchor" href="#expressions"><span class="octicon octicon-link"></span></a>Expressions</h2>
+
+<p>You can hit the backtick key to enter an <em>expression</em> to add to the
+charting area.</p>
+
+<h3>
+<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h3>
+
+<p>Plot a single series:</p>
+
+<pre><code>cmd_get
+</code></pre>
+
+<p>Plot the rate of a single series:</p>
+
+<pre><code>rate(cmd_get)
+</code></pre>
+
+<p>Or the second derivative:</p>
+
+<pre><code>rate(rate(cmd_get))
+</code></pre>
+
+<p>Plot the sum of two series:</p>
+
+<pre><code>cmd_get + cmd_set
+</code></pre>
+
+<p>Memory remaining before reaching 90% of <code>ep_max_data_size</code>:</p>
+
+<pre><code>(ep_max_data_size * 0.9) - mem_used
+</code></pre>
+
+<p><strong>NOTE</strong>: Order-of-operations is currently <em>not</em> followed. If
+you use <code>-</code> or <code>/</code>, you should use parentheses to indicate 
+the intended order of evaluation.</p>
+
+<h2>
+<a name="charting-series" class="anchor" href="#charting-series"><span class="octicon octicon-link"></span></a>Charting series</h2>
+
+<p>Click the name of the series you want to chart, and that series will be
+plotted in the chart area.</p>
+
+<p>You can click and drag on the chart to zoom in, hold Shift to pan, and
+double click to reset the zoom level.</p>
+
+<p>You can click "rate" next to a series to plot its rate of change.</p>
+
+<h2>
+<a name="showing-multiple-lines" class="anchor" href="#showing-multiple-lines"><span class="octicon octicon-link"></span></a>Showing multiple lines</h2>
+
+<p>You can hold down the Command or Control keys while clicking on series to
+add multiple series to the chart.</p>
+
+<p>You can compare a series across files or buckets by clicking a series,
+selecting a new file or bucket, and Command/Control clicking the series
+again.</p>
+
+<h2>
+<a name="presets" class="anchor" href="#presets"><span class="octicon octicon-link"></span></a>Presets</h2>
+
+<p>Mortimer comes with preset combinations of series selections that are
+commonly useful.</p>
+
+<p>You can also <em>save</em> your current selection of series as a preset using the
+Save Preset button.</p>
+
+<h2>
+<a name="setting-markers" class="anchor" href="#setting-markers"><span class="octicon octicon-link"></span></a>Setting Markers</h2>
+
+<p>You can hold Command or Control and click on the chart, to place a
+marker.</p>
+
+<p>Markers will stay on the chart while selecting different series, allowing
+you to keep track of significant points in time as you explore data.</p>
+
+<p>You can hold Shift and click on a marker to delete it.</p></div>

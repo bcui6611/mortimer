@@ -91,6 +91,7 @@ And in your `.bashrc` or equivalent:
 * `p` - increase smoothing of rates
 * `o` - decrease smoothing of rates
 * `` ` `` - add a series using a series expression
+* `?` - display this README
 
 ## Expressions
 

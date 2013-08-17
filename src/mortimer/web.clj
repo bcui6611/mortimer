@@ -171,21 +171,11 @@
                               :body s/trim)]
         (if (= currentrev gitrev)
           (println "Up to date!")
-          (let [diffs (:body  
-                        (http/get (str "https://api.github.com/repos/couchbaselabs/mortimer/"
-                                       "compare/" gitrev "..." currentrev)
-                                  {:socket-timeout 1000
-                                   :conn-timeout 1000
-                                   :as :json}))]
-            (if (= "ahead" (:status diffs))
-              (do
-                (println "New version available! Changes:")
-                (doseq [commit (:commits diffs)]
-                  (let [msg (-> commit :commit :message)
-                        msg (first (s/split-lines msg))]
-                    (println " *" msg)))
-                (println "\nhttp://s3.crate.im/mortimer-build/mortimer.jar\n"))
-              (println "You have a newer version than is available for download."))))
+          (println "
+  Your copy of mortimer is possibly out of date!
+
+  Get the current version at: 
+  http://s3.crate.im/mortimer-build/mortimer.jar\n"))
         (println "Couldn't check for updated version"))
       (println "Unknown mortimer version"))
     (catch Exception e 
