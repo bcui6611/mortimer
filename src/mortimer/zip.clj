@@ -16,7 +16,11 @@
 (defn suffixed 
   "Get all entries in a zipfile with names ending with `suffix`"
   [zipfile suffix]
-  (filter #(.endsWith (.getName %) suffix) (entries zipfile)))
+  ;; Prefix with / so root of zipfile is "/".
+  ;; This way, files named "blah.log" exactly can be matches as suffixed "/blah.log"
+  ;; and still work in the root of the file, while still not matching files named 
+  ;; "somethingblah.log"
+  (filter #(.endsWith (str "/" (.getName %)) suffix) (entries zipfile)))
 
 (defn suffixed-1 
   "Get an entry from the zip file with a name ending with `suffix`"
