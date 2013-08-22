@@ -16,8 +16,6 @@ File feature requests and bugs on
 
 Download the .jar at <http://s3.crate.im/mortimer-build/mortimer.jar>
 
-Documented Clojure code at <http://s3.crate.im/mortimer-build/mortimer-doc.html>
-
 To run from a git checkout, install [Leiningen][lein]. Now any
 `java -jar ~/path/to/mortimer.jar` command below can be replaced with
 typing `lein run --` in the checkout

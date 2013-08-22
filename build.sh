@@ -5,8 +5,6 @@ git rev-parse HEAD > resources/git-rev.txt
 cp resources/git-rev.txt mortimer-build/git-rev.txt
 lein uberjar
 mv target/*-standalone.jar mortimer-build/mortimer.jar
-#lein marg
-mv docs/uberdoc.html mortimer-build/mortimer-doc.html
 cp resources/public/vendor/swiss.css mortimer-build
 cat > mortimer-build/README.html <<EOF
 <html>
