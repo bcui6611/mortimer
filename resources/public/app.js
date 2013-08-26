@@ -130,7 +130,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       $scope.statfilter='';
     })
   });
-  
+
   Mousetrap.bind('p', function() {
     $scope.status.send({
       kind: "session-apply",
@@ -214,9 +214,11 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   //stat cursor
   Mousetrap.bind(['j', 'down'], function() {
     $scope.$apply($scope.cursorDown);
+    return false;
   });
   Mousetrap.bind(['k', 'up'], function() {
     $scope.$apply($scope.cursorUp);
+    return false;
   });
 
   Mousetrap.bind('g g', function() {
@@ -261,6 +263,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         $scope.activeBucket = bucket;
       });
     }
+    return false;
   });
   Mousetrap.bind(['shift+k', 'shift+up'], function() {
     $scope.bucketCursor--;
@@ -271,6 +274,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         $scope.activeBucket = bucket;
       });
     }
+    return false;
   });
 
 
@@ -286,6 +290,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         $scope.activeFile = file;
       });
     }
+    return false;
   });
   Mousetrap.bind(['mod+k', 'mod+up'], function() {
     $scope.fileCursor--;
@@ -296,6 +301,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         $scope.activeFile = file;
       });
     }
+    return false;
   });
 
   $scope.status = StatusService;
