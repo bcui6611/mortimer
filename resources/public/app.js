@@ -182,8 +182,8 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   //add selected stat rate
   Mousetrap.bind('mod+enter', mtStatToggle(null, true));
 
-  //add stat by expression
-  Mousetrap.bind('`', function() {
+
+  function openExprDialog(source) {
     $scope.$apply(function() {
       var dia = $dialog.dialog({
         backdrop: false,
@@ -201,6 +201,10 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
         setupstat(result.stat, true);
       });
     });
+  }
+  //add stat by expression
+  Mousetrap.bind('`', function() {
+    openExprDialog("");
   });
 
   Mousetrap.bind('?', function() {
@@ -254,7 +258,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   $scope.bucketCursor = -1;
   Mousetrap.bind(['shift+j', 'shift+down'], function() {
     $scope.bucketCursor++;
-    if($scope.bucketCursor >= $scope.status.remote.buckets.length) { 
+    if($scope.bucketCursor >= $scope.status.remote.buckets.length) {
       $scope.bucketCursor = $scope.status.remote.buckets.length - 1;
     }
     var bucket;
@@ -281,7 +285,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   $scope.fileCursor = -1;
   Mousetrap.bind(['mod+j', 'mod+down'], function() {
     $scope.fileCursor++;
-    if($scope.fileCursor >= $scope.status.remote.files.length) { 
+    if($scope.fileCursor >= $scope.status.remote.files.length) {
       $scope.fileCursor = $scope.status.remote.files.length - 1;
     }
     var file;
@@ -374,7 +378,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   $scope.saveActiveStats = function() {
     if(_.isEmpty($scope.activeStats)) {
       $dialog.messageBox(
-        "Error", 
+        "Error",
         "You must have stats selected to save a preset!",
         [{label: 'OK'}]).open();
       return;
@@ -402,7 +406,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     var dia = $dialog.messageBox(
       "Confirm",
       "Really delete preset \'" + name + "\'?",
-      [{label: 'Yes', result: true}, 
+      [{label: 'Yes', result: true},
        {label: 'No', result: false}]).open();
 
     dia.then(function(res) {
@@ -462,7 +466,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
 
   $scope.statOn = function(stat) {
     for(s in $scope.activeStats) {
-      if( s == stat || 
+      if( s == stat ||
           s.indexOf(stat + ';') == 0 ||
           s.indexOf('rate(' + stat + ');') == 0) {
         return true;
@@ -504,7 +508,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     {labels: ['Time', '?'],
      digitsAfterDecimal: 0,
      connectSeparatedPoints: true,
-     // Selection from Colorbrewer set "Set1" from http://colorbrewer2.org/ 
+     // Selection from Colorbrewer set "Set1" from http://colorbrewer2.org/
      // and https://github.com/mbostock/d3/blob/master/lib/colorbrewer/colorbrewer.js
      colors: ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#a65628","#f781bf","#999999"],
      legend: 'always',

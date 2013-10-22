@@ -215,7 +215,10 @@
                   (mapv (fn [f]
                           (future (swap! messages str
                                          (with-out-str
-                                           (mdb/load-collectinfo f :as (.getName f))))
+                                           (try
+                                             (mdb/load-collectinfo f :as (.getName f))
+                                             (catch Exception e
+                                               (println e)))))
                                   (print (str "\rLoading files... "
                                               (swap! numloaded inc) "/" numfiles))
                                   (flush)))
