@@ -189,6 +189,7 @@
              ["-v" "--debug" "Enable debugging messages" :flag true]
              ["-u" "--update" "Check for updates" :flag true :default true]
              ["-n" "--browse" "Auto open browser" :flag true :default true]
+             ["-d" "--diag" "Read diag.log (events)" :flag true :default true]
              ["-h" "--help" "Display help" :flag true])]
     (when (:debug opts)
       (pprint opts)
@@ -214,9 +215,9 @@
           (doseq [fut
                   (mapv (fn [f]
                           (future (swap! messages str
-                                         (with-out-str
+                                         (do
                                            (try
-                                             (mdb/load-collectinfo f :as (.getName f))
+                                             (mdb/load-collectinfo f :diag (:diag opts) :as (.getName f))
                                              (catch Exception e
                                                (println e)))))
                                   (print (str "\rLoading files... "

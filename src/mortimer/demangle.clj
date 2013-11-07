@@ -13,7 +13,7 @@
   [lines]
   (reduce (fn [acc line]
             (let [[_ k v] (re-matches #"([^\s]+)\s+(.*)" line)]
-              (if (and k v)
+              (if (and k v (re-matches #"[\-\d]+(.\d+)?" v))
                 (assoc acc
                        (keyword k)
                        (if (re-matches #"[\-\d]+(.\d+)?" v)

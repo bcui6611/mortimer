@@ -111,13 +111,14 @@
             (or (zip/suffixed-1 zf "/ns_server.stats.log")
                 (zip/suffixed-1 zf "/ns_server.debug.log")
                 (throw (ex-info "Couldn't find stats file" {:zipfile zipfile})))
-            diag-counted (some->> (zip/suffixed-1 zf "/diag.log")
-                                  (watched-stream as zf))
+            diag-counted (when (:diag options)
+                           (some->> (zip/suffixed-1 zf "/diag.log")
+                                    (watched-stream as zf)))
             stats-counted (watched-stream as zf statfile)]
         (try
           (when-not diag-counted
             (println "No diag.log found in file" as))
-          (when diag-counted 
+          (when diag-counted
             (swap! events assoc as (demangle/diag-parse diag-counted)))
           (d/debug "Parsing stats from" statfile "in" zipfile)
           (swap! stats assoc as (demangle/stats-parse stats-counted))
