@@ -132,11 +132,11 @@
   (mapv (partial remap-event file) (get @events file)))
 
 (defn extract [stat statset]
-  (let [ov (transient [])]
+  (persistent!
     (reduce (fn [acc statsnap]
               (let [t (:time statsnap)
                     v (get statsnap stat)]
                 (if (and t v)
                   (conj! acc [t v])
-                  acc))) ov statset)
-    (persistent! ov)))
+                  acc))) (transient [])
+            statset)))
