@@ -20,7 +20,12 @@
       </form>
 
       <ul>
+        <li><b>Options</b></li>
         <li>Connect Gaps? <input type="checkbox" ng-model="connect"></li>
+        <li><input type="radio" ng-model="logscale" value="false">&nbsp;Linear scale</br>
+            <input type="radio" ng-model="logscale" value="true">&nbsp;Log scale</li>
+        <li class="sep"></li>
+
         <li><b>Files</b></li>
 
         <li ng-class="{'lactive': activeFile == i, 'efile': eventFile == i}" 

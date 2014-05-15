@@ -644,5 +644,11 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       connectSeparatedPoints: $scope.connect
     });
   });
+
+  $scope.logscale = "false";
+  $scope.$watch('logscale', function() {
+    g.updateOptions({
+      logscale: ($scope.logscale === "true") });
+  });
 }
 
