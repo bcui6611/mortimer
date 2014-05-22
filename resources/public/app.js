@@ -618,7 +618,11 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
                'ep_meta_data_memory', 'ep_value_size'],
     'resident ratios': ['vb_active_perc_mem_resident', 'vb_replica_perc_mem_resident'],
     'operations': ['rate(cmd_get)', 'rate(cmd_set)', 'rate(delete_hits)', 'rate(delete_misses)',
-                   'rate(ep_tmp_oom_errors)']
+                   'rate(ep_tmp_oom_errors)'],
+    'Vbuckets': ['vb_active_num', 'vb_replica_num'],
+    'Disk': ['rate(ep_diskqueue_fill)', 'rate(ep_diskqueue_drain)', 'ep_diskqueue_items'],
+    'Key and Value Size' : ['ep_value_size / (curr_items_tot - ep_num_non_resident);name=Value Size',
+                            '((ep_kv_size - ep_value_size) - (curr_items_tot * 56)) / curr_items_tot;name=Key Size']
   };
   $scope.applyPreset = function(preset, e) {
     if(!(e.ctrlKey || e.metaKey)) {
