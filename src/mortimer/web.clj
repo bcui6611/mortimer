@@ -165,7 +165,7 @@
 (defn check-update []
   (try 
     (if-let [gitrev (s/trim (slurp (io/resource "git-rev.txt")))]
-      (if-let [currentrev (-> "http://s3.crate.im/mortimer-build/git-rev.txt"
+      (if-let [currentrev (-> "http://s3.amazonaws.com/cb-support/mortimer-build/git-rev.txt"
                               (http/get {:socket-timeout 1000}
                                         {:conn-timeout 1000})
                               :body s/trim)]
@@ -175,7 +175,7 @@
   Your copy of mortimer is possibly out of date!
 
   Get the current version at: 
-  http://s3.crate.im/mortimer-build/mortimer.jar\n"))
+  http://s3.amazonaws.com/cb-support/mortimer-build/mortimer.jar\n"))
         (println "Couldn't check for updated version"))
       (println "Unknown mortimer version"))
     (catch Exception e 

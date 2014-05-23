@@ -14,7 +14,7 @@ File feature requests and bugs on
 
 [cbg]: http://cbugg.hq.couchbase.com/search/tags:mortimer%20AND%20status:(inbox%20OR%20new%20OR%20open%20OR%20inprogress)
 
-Download the .jar at <http://s3.crate.im/mortimer-build/mortimer.jar>
+Download the .jar at <http://s3.amazonaws.com/cb-support/mortimer-build/mortimer.jar>
 
 To run from a git checkout, install [Leiningen][lein]. Now any
 `java -jar ~/path/to/mortimer.jar` command below can be replaced with
