@@ -176,7 +176,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
   //add selected stat
   Mousetrap.bind('r', mtStatToggle('rate', false));
   //add selected stat rate
-  Mousetrap.bind('mod+r', mtStatToggle('rate', true));
+  Mousetrap.bind('ctrl+r', mtStatToggle('rate', true));
   //change to selected stat
   Mousetrap.bind('enter', mtStatToggle(null, false));
   //add selected stat rate
@@ -655,4 +655,3 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       logscale: ($scope.logscale === "true") });
   });
 }
-
