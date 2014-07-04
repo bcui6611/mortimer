@@ -51,7 +51,7 @@ Each of these can be changed with command line flags.
       -v, --no-debug, --debug    false    Enable debugging messages
       -u, --no-update, --update  true     Check for updates
       -n, --no-browse, --browse  true     Auto open browser
-      -h, --no-help, --help      false    Display help   
+      -h, --no-help, --help      false    Display help
 
 If loading files is slow (or you get an `OutOfMemoryError` exception),
 try giving the JVM more RAM:
@@ -82,7 +82,7 @@ And in your `.bashrc` or equivalent:
 * `enter` - chart series at cursor
 * `cmd+enter` - add series at cursor to chart
 * `r` - chart rate of series at cursor
-* `cmd+r` - add rate of series under at to chart
+* `ctrl+r` - add rate of series under at to chart
 * `>`, `<` - open or close drawer
 * `q` - toggle multi-window sync push from this window
 * `gg` - move cursor to top of series list
@@ -119,7 +119,7 @@ Memory remaining before reaching 90% of `ep_max_data_size`:
     (ep_max_data_size * 0.9) - mem_used
 
 **NOTE**: Order-of-operations is currently *not* followed. If
-you use `-` or `/`, you should use parentheses to indicate 
+you use `-` or `/`, you should use parentheses to indicate
 the intended order of evaluation.
 
 ## Charting series
@@ -158,4 +158,3 @@ Markers will stay on the chart while selecting different series, allowing
 you to keep track of significant points in time as you explore data.
 
 You can hold Shift and click on a marker to delete it.
-
