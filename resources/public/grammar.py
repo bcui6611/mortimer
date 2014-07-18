@@ -97,15 +97,12 @@ def multiplying(op1, op2):
 
 
 def dividing(op1, op2):
-    elements_to_remove = []
     if isinstance(op1, list) and not isinstance(op2, list):
         for x in range(len(op1)):
             if op2 == 0:
-                elements_to_remove.append(x)
+                op1[x][1] = None
             else:
                 op1[x][1] = op1[x][1] / op2
-        for x in elements_to_remove:
-            del(op1[x])
         return op1
     elif isinstance(op2, list) and isinstance(op1, list):
         if len(op1) != len(op2):
@@ -114,11 +111,9 @@ def dividing(op1, op2):
         else:
             for x in range(len(op1)):
                 if op2[x][1] == 0:
-                    elements_to_remove.append(x)
+                    op1[x][1] = None
                 else:
                     op1[x][1] = op1[x][1] / op2[x][1]
-            for x in elements_to_remove:
-                del(op1[x])
             return op1
     else:
         print('Error in dividing function: dividing number by a list')
