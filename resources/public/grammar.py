@@ -68,7 +68,6 @@ def parse_expr(expr, context):
 
 def series_by_name(seriesname, context):
     keysDictionary = {'keys': [context['file'], context['bucket']]}
-    print("keys dict = " + str(keysDictionary))
     file = context['file']
     bucket = context['bucket']
     data = globals.stats[file][bucket]
@@ -109,7 +108,7 @@ def dividing(op1, op2):
         else:
             for x in range(len(op1)):
                 op1[x][1] = op1[x][1] / op2[x][1]
-                return op1
+            return op1
     else:
         print('Error in dividing function: dividing number by a list')
         exit(1)
