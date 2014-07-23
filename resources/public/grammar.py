@@ -73,7 +73,10 @@ def series_by_name(seriesname, context):
     data = globals.stats[file][bucket]
     result = []
     for x in data:
-        result.append([x['time'], x[seriesname]])
+        try:
+          result.append([x['time'], x[seriesname]])
+        except:
+            return []
     return result
 
 

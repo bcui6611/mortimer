@@ -57,23 +57,41 @@ def multistat_response(queries):
     multipointseries['points'] = []
     pointseriesmap = {}
     times = []
+    pointseriestimes = []
+    
+    # first get all the time points for all queries
+    for q in queries:
+        pointseries = create_pointseries(q)
+        # get just the times
+        times = times + [x[0] for x in pointseries['points']]
+    # remove duplicates
+    times = list(set(times))
+    times.sort()
 
     # split-up query
     for q in queries:
         pointseries = create_pointseries(q)
         multipointseries['stats'].append(pointseries['stats'])
         # get just the times
-        times = times + [x[0] for x in pointseries['points']]
+        pointseriestimes = [x[0] for x in pointseries['points']]
         for x in pointseries['points']:
             t = x[0]
             s = x[1]
             if t in pointseriesmap:
                 pointseriesmap[t] = pointseriesmap[t] + [s]
             else:
+                #if not in pointseriesmap what happens if it is a second or third query?
                 pointseriesmap[t] = [s]
-    # remove duplicates
-    times = list(set(times))
-    times.sort()
+
+
+        #Now add null for all the times there is no data
+        for t in times:
+            if t not in pointseriestimes:
+                if t in pointseriesmap.keys():
+                    pointseriesmap[t] = pointseriesmap[t] + [None]
+                else:
+                    pointseriesmap[t] = [None]
+
     # iterate through the sorted and non-duplicate times
     for t in times:
         multipointseries['points'].append([t * 1000] + pointseriesmap[t])
