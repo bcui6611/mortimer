@@ -189,7 +189,7 @@ class MainHandler(tornado.web.RequestHandler):
     """ Class for callback handler to respond to root web page access. """
 
     def get(self):
-        self.render('index.html')
+        self.render('resources/public/index.html')
 
 
 class FileHandler(tornado.web.RequestHandler):
@@ -245,9 +245,10 @@ class WebServer (threading.Thread):
     """ The class for creating the web server using tornado
         See http://www.tornadoweb.org/ for more details"""
 
-    def __init__(self, args):
+    def __init__(self, args, relativepath):
         threading.Thread.__init__(self)
         self.port = args.port
+        self.relativepath = relativepath
 
     def run(self):
         logging.debug('Web server started on port ' + str(self.port))
@@ -259,7 +260,7 @@ class WebServer (threading.Thread):
             (r'/files', FileHandler),
             (r'/statdata', StatDataHandler),
             (r'/(.*)', tornado.web.StaticFileHandler,
-             {'path': './'})
+             {'path': self.relativepath + '/resources/public'})
         ])
         http_server = tornado.httpserver.HTTPServer(application)
         http_server.listen(self.port)

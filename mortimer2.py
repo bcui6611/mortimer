@@ -12,6 +12,7 @@ import datetime
 import calendar
 import string
 import Queue
+import sys
 
 
 #from functools import lru_cache
@@ -190,8 +191,14 @@ if __name__ == '__main__':
 
     logging.debug(args)
 
+    matchObj= re.match(r'(.*)mortimer2.py$', sys.argv[0], re.I)
+    if matchObj:
+        relativepath = matchObj.group(1)
+
+    logging.debug('relativepath = ' + relativepath)
+
     # Start the web server
-    web_server_thread = web_server.WebServer(args)
+    web_server_thread = web_server.WebServer(args, relativepath)
     web_server_thread.start()
 
     # Open the web browser on the correct port
