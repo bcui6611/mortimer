@@ -8,6 +8,8 @@ sessionData = {'smoothing-window': 0}
 
 q = Queue.Queue()
 
+messageq = Queue.Queue()
+
 threads = {}
 
 threadingDS = Lock()

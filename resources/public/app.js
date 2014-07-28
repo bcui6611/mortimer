@@ -13,7 +13,7 @@ app.config(function($routeProvider, $locationProvider) {
 });
 
 toastr.options = {
-  timeOut: 10000
+  timeOut: 2000
 };
 
 app.factory('StatusService', function($rootScope) {

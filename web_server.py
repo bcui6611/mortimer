@@ -32,12 +32,12 @@ def parse_statqry(qstr):
 
 # Implement a LRU cache containing maximum of 100 items
 # @lru_cache(maxsize=100)
-def create_pointseries(qstr):
+def create_pointseries(qstr, raisewarning):
     expr, queryDictionary = parse_statqry(qstr)
     # merge in sessionData to the contextDictionary
     contextDictionary = dict(
         list(globals.sessionData.items()) + list(queryDictionary['context'].items()))
-    data = grammar.expr_eval_string(expr, contextDictionary)
+    data = grammar.expr_eval_string(expr, contextDictionary, raisewarning)
     if 'name' in contextDictionary.keys():
         namestring = contextDictionary[
             'name'] + ' in ' + contextDictionary['bucket'] + ' on ' + contextDictionary['file']
@@ -61,16 +61,18 @@ def multistat_response(queries):
     
     # first get all the time points for all queries
     for q in queries:
-        pointseries = create_pointseries(q)
+        pointseries = create_pointseries(q, False)
         # get just the times
         times = times + [x[0] for x in pointseries['points']]
+
     # remove duplicates
     times = list(set(times))
     times.sort()
 
+
     # split-up query
     for q in queries:
-        pointseries = create_pointseries(q)
+        pointseries = create_pointseries(q, True)
         multipointseries['stats'].append(pointseries['stats'])
         # get just the times
         pointseriestimes = [x[0] for x in pointseries['points']]
@@ -123,19 +125,18 @@ def list_stats():
     """ Function that returns all the names of all the statistics that have been loaded.
         Actually those beginning with a { have been removed as there are 1000's. """
     statsList = []
-    if not globals.loading_file:
-        for k, v in globals.stats.items():
-            for a, b in v.items():
-                # In the original mortimer only use first entry in list
-                # I suspect this was a bug.  We iterate through all elements in
-                # the list
-                for item in b:
-                    for x, y in item.items():
-                        matchObj = re.match(r'^{.*', x, re.I)
-                        if not matchObj:
-                            statsList.append(x)
-        statsList = list(set(statsList))
-        statsList.sort()
+    for k, v in globals.stats.items():
+        for a, b in v.items():
+            # In the original mortimer only use first entry in list
+            # I suspect this was a bug.  We iterate through all elements in
+            # the list
+            for item in b:
+                for x, y in item.items():
+                    matchObj = re.match(r'^{.*', x, re.I)
+                    if not matchObj:
+                        statsList.append(x)
+    statsList = list(set(statsList))
+    statsList.sort()
     return statsList
 
 
@@ -147,9 +148,6 @@ def send_session(websocket):
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
-
-    def initialize(self):
-        self.loaded = False
 
     def open(self):
         logging.debug('new connection opened')
@@ -167,7 +165,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
     def send_update(self):
         if globals.loading_file:
-            self.loaded = False
             files_being_loaded = {}
             for a, b in globals.threads.items():
                 files_being_loaded[a] = {
@@ -176,12 +173,11 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                                                          'loading': files_being_loaded, 'buckets': []}}
             jsonmessage = json.dumps(message)
             self.write_message(jsonmessage)
-        elif self.loaded == False:
-            message = {'kind': 'status-update', 'data': {'files':
-                                                         list_files(), 'loading': {}, 'buckets': list_buckets()}}
+    
+        while not globals.messageq.empty():
+            message = globals.messageq.get()
             jsonmessage = json.dumps(message)
             self.write_message(jsonmessage)
-            self.loaded = True
 
 
 class MainHandler(tornado.web.RequestHandler):

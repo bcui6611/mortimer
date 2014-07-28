@@ -194,6 +194,8 @@ if __name__ == '__main__':
     matchObj= re.match(r'(.*)mortimer2.py$', sys.argv[0], re.I)
     if matchObj:
         relativepath = matchObj.group(1)
+    if relativepath == '':
+        relativepath = './'
 
     logging.debug('relativepath = ' + relativepath)
 
@@ -237,6 +239,8 @@ if __name__ == '__main__':
 
     logging.debug('finished loading zip fles')
     globals.loading_file = False
+    message = {'kind': 'status-update', 'data': {'files': web_server.list_files(), 'loading': {}, 'buckets': web_server.list_buckets()}}
+    globals.messageq.put(message)
 
     # Wait for user to press ctl-C
     signal.pause()

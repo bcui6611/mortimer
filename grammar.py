@@ -61,12 +61,12 @@ def parse_expr(expr, context):
         result = my_Expr.parse(expr)
         return result
     except:
-        print('Parsing Error')
-        print('Expression= ' + expr)
+        message = {'kind': 'error', 'short': 'Parsing Error, could not parse ' + str(expr), 'extra': ''}
+        globals.messageq.put(message)
         return ''
 
 
-def series_by_name(seriesname, context):
+def series_by_name(seriesname, context, raisewarning):
     keysDictionary = {'keys': [context['file'], context['bucket']]}
     file = context['file']
     bucket = context['bucket']
@@ -76,6 +76,9 @@ def series_by_name(seriesname, context):
         try:
           result.append([x['time'], x[seriesname]])
         except:
+            if raisewarning:
+                message = {'kind': 'warning', 'short': 'Expression references empty for ' + seriesname, 'extra': ''}
+                globals.messageq.put(message)
             return []
     return result
 
@@ -250,13 +253,13 @@ def moving_average(pointseries, window):
     return smoothed
 
 
-def expr_fun_table(fname, seriesname, context):
+def expr_fun_table(fname, seriesname, context, raisewarning):
     if fname[0] == 'rate':
-        uptime = series_by_name('uptime', context)
+        uptime = series_by_name('uptime', context, raisewarning)
         movingaverage = moving_average(uptime, context['smoothing-window'])
         derivativeresult = derivativewrapper(movingaverage, 'linear')
 
-        series = series_by_name(seriesname[0], context)
+        series = series_by_name(seriesname[0], context, raisewarning)
         seriesmovingaverage = moving_average(
             series, context['smoothing-window'])
         seriesderivativeresult = derivativewrapper(
@@ -275,38 +278,38 @@ def expr_fun_table(fname, seriesname, context):
 
     else:
         print('Error do not recognise function')
-        return series_by_name(seriesname[0], context)
+        return series_by_name(seriesname[0], context, raisewarning)
 
 
-def expr_evaluate(exprtree, context):
+def expr_evaluate(exprtree, context, raisewarning):
     if isinstance(exprtree, Number):
         return float(exprtree[0])
     elif isinstance(exprtree, Identifier):
-        return series_by_name(exprtree[0], context)
+        return series_by_name(exprtree[0], context, raisewarning)
     elif isinstance(exprtree, FunctionCall):
-        return expr_fun_table(exprtree[0], exprtree[1], context)
+        return expr_fun_table(exprtree[0], exprtree[1], context, raisewarning)
     elif isinstance(exprtree, Mul):
-        op1 = expr_evaluate(exprtree[0], context)
-        op2 = expr_evaluate(exprtree[1], context)
+        op1 = expr_evaluate(exprtree[0], context, raisewarning)
+        op2 = expr_evaluate(exprtree[1], context, raisewarning)
         return multiplying(op1, op2)
     elif isinstance(exprtree, Div):
-        op1 = expr_evaluate(exprtree[0], context)
-        op2 = expr_evaluate(exprtree[1], context)
+        op1 = expr_evaluate(exprtree[0], context, raisewarning)
+        op2 = expr_evaluate(exprtree[1], context, raisewarning)
         return dividing(op1, op2)
     elif isinstance(exprtree, Sub):
-        op1 = expr_evaluate(exprtree[0], context)
-        op2 = expr_evaluate(exprtree[1], context)
+        op1 = expr_evaluate(exprtree[0], context, raisewarning)
+        op2 = expr_evaluate(exprtree[1], context, raisewarning)
         return subtracting(op1, op2)
     elif isinstance(exprtree, Add):
-        op1 = expr_evaluate(exprtree[0], context)
-        op2 = expr_evaluate(exprtree[1], context)
+        op1 = expr_evaluate(exprtree[0], context, raisewarning)
+        op2 = expr_evaluate(exprtree[1], context, raisewarning)
         return adding(op1, op2)
 
 
-def expr_eval_string(expr, contextDictionary):
+def expr_eval_string(expr, contextDictionary, raisewarning):
     # remove whitespace from start & end of the string
     # can't see whenever this is required however in the original mortimer
     expr = expr.strip()
     parsedExpression = parse_expr(expr, contextDictionary)
-    result = expr_evaluate(parsedExpression[0], contextDictionary)
+    result = expr_evaluate(parsedExpression[0], contextDictionary, raisewarning)
     return result
