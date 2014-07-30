@@ -95,7 +95,7 @@ def multiplying(op1, op2):
     else:
         if len(op1) != len(op2):
             print('Error in multiplying function: lengths not equal')
-            exit(1)
+            return []
         else:
             for x in range(len(op1)):
                 op1[x][1] = op1[x][1] * op2[x][1]
@@ -113,7 +113,7 @@ def dividing(op1, op2):
     elif isinstance(op2, list) and isinstance(op1, list):
         if len(op1) != len(op2):
             print('Error in dividing function: lengths not equal')
-            exit(1)
+            return []
         else:
             for x in range(len(op1)):
                 if op2[x][1] == 0:
@@ -123,7 +123,7 @@ def dividing(op1, op2):
             return op1
     else:
         print('Error in dividing function: dividing number by a list')
-        exit(1)
+        return []
 
 
 def adding(op1, op2):
@@ -138,6 +138,7 @@ def adding(op1, op2):
     else:
         if len(op1) != len(op2):
             print('Error in adding function: lengths not equal')
+            return []
         else:
             for x in range(len(op1)):
                 op1[x][1] = op1[x][1] + op2[x][1]
@@ -152,14 +153,14 @@ def subtracting(op1, op2):
     elif isinstance(op2, list) and isinstance(op1, list):
         if len(op1) != len(op2):
             print('Error in subtracting function: lengths not equal')
-            exit(1)
+            return []
         else:
             for x in range(len(op1)):
                 op1[x][1] = op1[x][1] - op2[x][1]
             return op1
     else:
         print('Error in subtracting function: subtracting list from a number')
-        exit(1)
+        return []
 
 
 def derivative(f):
@@ -265,9 +266,8 @@ def expr_fun_table(fname, seriesname, context, raisewarning):
         seriesderivativeresult = derivativewrapper(
             seriesmovingaverage, 'linear')
         if len(derivativeresult) != len(seriesderivativeresult):
-            print(
-                'Error: length of uptime derivative results != series derivative results')
-            exit(1)
+            print('Error: length of uptime derivative results != series derivative results')
+            return []
         result = []
         for x in range(len(derivativeresult)):
             if derivativeresult[x][1] < 0:
@@ -311,5 +311,7 @@ def expr_eval_string(expr, contextDictionary, raisewarning):
     # can't see whenever this is required however in the original mortimer
     expr = expr.strip()
     parsedExpression = parse_expr(expr, contextDictionary)
-    result = expr_evaluate(parsedExpression[0], contextDictionary, raisewarning)
+    result = []
+    if parsedExpression != '':
+        result = expr_evaluate(parsedExpression[0], contextDictionary, raisewarning)
     return result

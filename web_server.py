@@ -73,26 +73,27 @@ def multistat_response(queries):
     # split-up query
     for q in queries:
         pointseries = create_pointseries(q, True)
-        multipointseries['stats'].append(pointseries['stats'])
-        # get just the times
-        pointseriestimes = [x[0] for x in pointseries['points']]
-        for x in pointseries['points']:
-            t = x[0]
-            s = x[1]
-            if t in pointseriesmap:
-                pointseriesmap[t] = pointseriesmap[t] + [s]
-            else:
-                #if not in pointseriesmap what happens if it is a second or third query?
-                pointseriesmap[t] = [s]
-
-
-        #Now add null for all the times there is no data
-        for t in times:
-            if t not in pointseriestimes:
-                if t in pointseriesmap.keys():
-                    pointseriesmap[t] = pointseriesmap[t] + [None]
+        if pointseries['points']:
+            multipointseries['stats'].append(pointseries['stats'])
+            # get just the times
+            pointseriestimes = [x[0] for x in pointseries['points']]
+            for x in pointseries['points']:
+                t = x[0]
+                s = x[1]
+                if t in pointseriesmap:
+                    pointseriesmap[t] = pointseriesmap[t] + [s]
                 else:
-                    pointseriesmap[t] = [None]
+                    #if not in pointseriesmap what happens if it is a second or third query?
+                    pointseriesmap[t] = [s]
+
+
+            #Now add null for all the times there is no data
+            for t in times:
+                if t not in pointseriestimes:
+                    if t in pointseriesmap.keys():
+                        pointseriesmap[t] = pointseriesmap[t] + [None]
+                    else:
+                        pointseriesmap[t] = [None]
 
     # iterate through the sorted and non-duplicate times
     for t in times:
