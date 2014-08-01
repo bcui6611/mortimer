@@ -13,8 +13,19 @@ import json
 from urllib import unquote
 import re
 
+#from functools import lru_cache
+
+""" This file contains the functions associated with providing the web server functionality.
+    When the web server recieves queries for a set of stat it invokes
+    multistat_response which in turn invokes create_pointseries for each query.
+    
+    The function create_pointseries invokes expr_eval_string, which is responsible for
+    parsing the expression and returning the associated data.  See grammar.py for more
+    details on this functionality. """
+
 
 def parse_statqry(qstr):
+    """ This function simply separates out the query from the context information. """
     matchObj = re.match(r'^([^;]+);(.*)$', qstr, re.I)
     if matchObj:
         expr = matchObj.group(1)
@@ -24,33 +35,37 @@ def parse_statqry(qstr):
             kv = item.split('=')
             head, tail = kv[0], kv[1]
             contextDictionary[head] = tail
-        queryDictionary = dict()
-        queryDictionary['expr'] = expr
-        queryDictionary['context'] = contextDictionary
-    return expr, queryDictionary
+        return expr, contextDictionary
+    else:
+        print('Error could not parse query string in parse_statqry(qstr)')
+        os._exit(1)
 
 
 # Implement a LRU cache containing maximum of 100 items
 # @lru_cache(maxsize=100)
-def create_pointseries(qstr, raisewarning):
-    expr, queryDictionary = parse_statqry(qstr)
+def create_pointseries(qstr):
+    """ Called by multistat_response for each query.
+        It returns the data associated with the individual query. """
+    expr, contextDictionary = parse_statqry(qstr)
     # merge in sessionData to the contextDictionary
     contextDictionary = dict(
-        list(globals.sessionData.items()) + list(queryDictionary['context'].items()))
-    data = grammar.expr_eval_string(expr, contextDictionary, raisewarning)
+        list(globals.sessionData.items()) + list(contextDictionary.items()))
+    #  Calls into grammar file to fully parse the expression and collect the data
+    data = grammar.expr_eval_string(expr, contextDictionary)
     if 'name' in contextDictionary.keys():
         namestring = contextDictionary[
             'name'] + ' in ' + contextDictionary['bucket'] + ' on ' + contextDictionary['file']
     else:
         namestring = expr + ' in ' + \
             contextDictionary['bucket'] + ' on ' + contextDictionary['file']
-    # In the original mortimer the name is attached as meta-data to the data -
-    # we just attach the data
+    # In the original mortimer the name is attached as meta-data to the data,
+    # we just attach the data.
     pointseries = {'stats': namestring, 'points': data}
     return pointseries
 
 
 def multistat_response(queries):
+    """ Top-level function for returning the data for all of the queries. """
     multipointseries = {}
     multipointseries['stats'] = []
     multipointseries['interpolated'] = 'false'
@@ -61,18 +76,16 @@ def multistat_response(queries):
     
     # first get all the time points for all queries
     for q in queries:
-        pointseries = create_pointseries(q, False)
+        pointseries = create_pointseries(q)
         # get just the times
         times = times + [x[0] for x in pointseries['points']]
 
     # remove duplicates
     times = list(set(times))
     times.sort()
-
-
-    # split-up query
+    missing_data = False
     for q in queries:
-        pointseries = create_pointseries(q, True)
+        pointseries = create_pointseries(q)
         if pointseries['points']:
             multipointseries['stats'].append(pointseries['stats'])
             # get just the times
@@ -94,6 +107,13 @@ def multistat_response(queries):
                         pointseriesmap[t] = pointseriesmap[t] + [None]
                     else:
                         pointseriesmap[t] = [None]
+        else:
+            #pointseires['points'] is empty so we must be missing some data
+            missing_data = True
+
+    if missing_data:
+        message = {'kind': 'warning', 'short': 'Missing data', 'extra': ''}
+        globals.messageq.put(message)
 
     # iterate through the sorted and non-duplicate times
     for t in times:
@@ -128,9 +148,9 @@ def list_stats():
     statsList = []
     for k, v in globals.stats.items():
         for a, b in v.items():
-            # In the original mortimer only use first entry in list
+            # In the original mortimer only use first entry in list.
             # I suspect this was a bug.  We iterate through all elements in
-            # the list
+            # the list.
             for item in b:
                 for x, y in item.items():
                     matchObj = re.match(r'^{.*', x, re.I)
@@ -142,6 +162,7 @@ def list_stats():
 
 
 def send_session(websocket):
+    """ Function to send initial session data over web socket. """
     message = {'kind': 'session-data', 'data': globals.sessionData}
     jsonmessage = json.dumps(message)
     logging.debug(jsonmessage)
@@ -149,22 +170,24 @@ def send_session(websocket):
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
-
+    """ Class for callback handler to respond to Web Socket. """
     def open(self):
-        logging.debug('new connection opened')
+        logging.debug('New web socket connection opened.')
         # send session data update
         send_session(self)
         self.callback = tornado.ioloop.PeriodicCallback(self.send_update, 250)
         self.callback.start()
 
     def on_message(self, message):
-        logging.debug('message received %s' % message)
+        logging.debug('>essage received %s.' % message)
 
     def on_close(self):
-        logging.debug('connection closed')
+        logging.debug('Web socket connection closed.')
         self.callback.stop()
 
     def send_update(self):
+        """ This function is called every 250ms and send a message if files are being loaded.
+            Or there are any messages in the message queue. """
         if globals.loading_file:
             files_being_loaded = {}
             for a, b in globals.threads.items():
@@ -182,46 +205,39 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 
 class MainHandler(tornado.web.RequestHandler):
-
     """ Class for callback handler to respond to root web page access. """
-
+    def initialize(self, relativepath):
+        self.relativepath = relativepath
+    
     def get(self):
-        self.render('resources/public/index.html')
+        self.render(self.relativepath + '../../resources/public/index.html')
 
 
 class FileHandler(tornado.web.RequestHandler):
-
     """ Class for callback handler to list zip files that have been loaded.
         It is not used by the GUI (so could remove) - but is in the original mortimer."""
-
     def get(self):
         resource = json.dumps(list_files())
         self.write(resource)
 
 
 class BucketHandler(tornado.web.RequestHandler):
-
     """ Class for callback handler to list the buckets that have been loaded.
         If is not used by the GUI (so could remove) - but is in the original mortimer."""
-
     def get(self):
         resource = json.dumps(list_buckets())
         self.write(resource)
 
 
 class StatsHandler(tornado.web.RequestHandler):
-
     """ Class for callback handler to list all of the available stats. """
-
     def get(self):
         resource = json.dumps(list_stats())
         self.write(resource)
 
 
 class StatDataHandler(tornado.web.RequestHandler):
-
     """ Class for callback handler to process query generated by the GUI. """
-
     def get(self):
         s = self.request.query
         s2 = unquote(s)
@@ -233,15 +249,14 @@ class StatDataHandler(tornado.web.RequestHandler):
             resource = json.dumps(result)
             self.write(resource)
         else:
-            print('Error Could not parse query')
-            exit(1)
+            print('Error Could not parse query sent by GUI in \
+                  StatDataHandler(tornado.web.RequestHandler):get(self)')
+            os._exit(1)
 
 
 class WebServer (threading.Thread):
-
     """ The class for creating the web server using tornado
         See http://www.tornadoweb.org/ for more details"""
-
     def __init__(self, args, relativepath):
         threading.Thread.__init__(self)
         self.port = args.port
@@ -252,12 +267,12 @@ class WebServer (threading.Thread):
         application = tornado.web.Application([
             (r'/status-ws', WSHandler),
             (r'/stats', StatsHandler),
-            (r'/', MainHandler),
+            (r'/', MainHandler, {'relativepath': self.relativepath}),
             (r'/buckets', BucketHandler),
             (r'/files', FileHandler),
             (r'/statdata', StatDataHandler),
             (r'/(.*)', tornado.web.StaticFileHandler,
-             {'path': self.relativepath + '/resources/public'})
+             {'path': self.relativepath + '../../resources/public'})
         ])
         http_server = tornado.httpserver.HTTPServer(application)
         http_server.listen(self.port)
