@@ -558,7 +558,8 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       return;
     }
     if($scope.updating) {
-      $scope.retrigger = true;
+      // Daniel Owen - Don't think should re-trigger as causes graph to be drawn too often.
+      //$scope.retrigger = true;
       return;
     }
     $scope.updating = true;
@@ -624,17 +625,45 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     'Key and Value Size' : ['ep_value_size / (curr_items_tot - ep_num_non_resident);name=Value Size',
                             '((ep_kv_size - ep_value_size) - (curr_items_tot * 56)) / curr_items_tot;name=Key Size']
   };
+    
+ var mystats = {
+                // Memory Stats
+                'bytes' : 'Engine’s total memory usage',
+                'ep_kv_size' : 'Memory used to store item metadata, keys and values, no matter the vbucket’s state. If an item’s value is ejected, this stat will be decremented by the size of the item’s value.',
+                'ep_value_size' : 'Memory used to store values for resident keys',
+                'ep_overhead' : 'Extra memory used by transient data like persistence queue, replication queues, checkpoints, etc',
+                'ep_max_size' : 'Max amount of data allowed in memory',
+                'ep_mem_low_wat' : 'Low water mark for auto-evictions',
+                'ep_mem_high_wat' : 'High water mark for auto-evictions',
+                'ep_oom_errors' : 'Number of times unrecoverable OOMs happened while processing operations',
+     
+                // Not Formally Defined (NFD) Stats
+                'bytes_read' : 'NFD: Bytes read by memcache?',
+                'bytes_written' : 'NFD: Bytes written by memcache?',
+               };
+
   $scope.applyPreset = function(preset, e) {
+    // Daniel Owen - Set updating to true to stop graphs being drawn prematurely.
+    $scope.updating = true;
     if(!(e.ctrlKey || e.metaKey)) {
       $scope.activeStats = {};
     }
     _.each(preset, function(stat) {
+      // Daniel Owen - If on last item in list then turn off updating so graph will be drawn.
+      if(preset[preset.length-1] == stat) {
+        $scope.updating = false;}
       return setupstat(stat, true);
     });
   }
   $scope.presetStats = function(preset) {
     return _(preset).map(_.escape).join("<br>");
   }
+    
+  $scope.describeStats = function(stat) {
+      if (stat in mystats) {
+          var description = mystats[stat];
+          return (description.concat("<br>"));}
+    }
 
   $scope.statclicked = function(stat, e) {
     if(setupstat(stat, e.ctrlKey || e.metaKey)) {

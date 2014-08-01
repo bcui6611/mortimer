@@ -4,6 +4,10 @@ from bisect import bisect_left
 import logging
 
 
+""" The following class definitions are used to aid in the construction of the
+    Abstract Syntax Tree from the expression.  For example, they allow simple tests
+    such as isinstance(exprtree, Identfier).  See expr_evaluate(exprtree, context). """
+
 class Identifier(List):
     pass
 
@@ -31,6 +35,7 @@ class Div(List):
 class FunctionCall(List):
     pass
 
+""" Grammar rules used by the lepl module.  See http://www.acooke.org/lepl/ for more info """
 my_Identifier = Token(r'[a-zA-Z_][a-zA-Z_0-9]*') > Identifier
 symbol = Token('[^0-9a-zA-Z \t\r\n]')
 my_Value = Token(UnsignedReal())
@@ -57,6 +62,9 @@ my_Expr += my_Add | my_Sub | group2
 
 
 def parse_expr(expr, context):
+    """ Wrapper function to the entry lepl parse function.
+        If manage to parse return Abstract Syntax Tree, otherwise send message over web socket to
+        the web browser and return the empty string. """
     try:
         result = my_Expr.parse(expr)
         return result
@@ -66,19 +74,20 @@ def parse_expr(expr, context):
         return ''
 
 
-def series_by_name(seriesname, context, raisewarning):
+def series_by_name(seriesname, context):
     keysDictionary = {'keys': [context['file'], context['bucket']]}
     file = context['file']
     bucket = context['bucket']
-    data = globals.stats[file][bucket]
+    data = {}
+    try:
+        data = globals.stats[file][bucket]
+    except:
+        return []
     result = []
     for x in data:
         try:
-          result.append([x['time'], x[seriesname]])
+            result.append([x['time'], x[seriesname]])
         except:
-            if raisewarning:
-                message = {'kind': 'warning', 'short': 'Expression references empty for ' + seriesname, 'extra': ''}
-                globals.messageq.put(message)
             return []
     return result
 
@@ -94,7 +103,7 @@ def multiplying(op1, op2):
         return op2
     else:
         if len(op1) != len(op2):
-            print('Error in multiplying function: lengths not equal')
+            print('Error multiplying: lengths not equal.  See function multiplying(op1, op2)')
             return []
         else:
             for x in range(len(op1)):
@@ -112,7 +121,7 @@ def dividing(op1, op2):
         return op1
     elif isinstance(op2, list) and isinstance(op1, list):
         if len(op1) != len(op2):
-            print('Error in dividing function: lengths not equal')
+            print('Error dividing: lengths not equal.  See function dividing(op1, op2)')
             return []
         else:
             for x in range(len(op1)):
@@ -122,7 +131,7 @@ def dividing(op1, op2):
                     op1[x][1] = op1[x][1] / op2[x][1]
             return op1
     else:
-        print('Error in dividing function: dividing number by a list')
+        print('Error dividing: dividing number by a list.  See function dividing(op1, op2)')
         return []
 
 
@@ -164,6 +173,7 @@ def subtracting(op1, op2):
 
 
 def derivative(f):
+    """ Function that returns the (approx) derivative of function f. """
     def df(x, h=0.1e-4):
         return (f(x + h / 2) - f(x - h / 2)) / h
     return df
@@ -211,15 +221,15 @@ def interpolate(derivseries, interpargs):
 
 
 def derivativewrapper(pointseries, interpargs):
-    # remove all those that have null as second argument
     derivseries = []
+    # Remove all those that have null as second argument
     for x in pointseries:
         if x[1] != None:
             derivseries.append(x)
+    # Return the interpolate function
     inter = interpolate(derivseries, interpargs)
-    # first derivative
+    # Return the first derivative function applied to the interpolate function
     dg = derivative(inter)
-    # calling the first derivative on the interpolate function
     result = []
     for x in pointseries:
         newx = [x[0], dg(x[0] + 0.5)]
@@ -228,6 +238,10 @@ def derivativewrapper(pointseries, interpargs):
 
 
 def moving_average(pointseries, window):
+    """ Function for calculating the moving average.
+        The Python module Numpy can be used to calulate the moving average
+        (using the convolve function), but Numpy is not compatible with pypy and
+        so has not been used. """
     smoothed = []
     for n in range(len(pointseries)):
         rangestart = n - window
@@ -254,21 +268,30 @@ def moving_average(pointseries, window):
     return smoothed
 
 
-def expr_fun_table(fname, seriesname, context, raisewarning):
+def expr_fun_table(fname, seriesname, context):
+    """ Provides support for calling functions.  Currently only rate is supported.  """
     if fname[0] == 'rate':
-        uptime = series_by_name('uptime', context, raisewarning)
+        # Get the uptime from the stats
+        uptime = series_by_name('uptime', context)
+        # Calculate the moving average of uptime
         movingaverage = moving_average(uptime, context['smoothing-window'])
+        # Calculate the derivative of uptime
         derivativeresult = derivativewrapper(movingaverage, 'linear')
-
-        series = series_by_name(seriesname[0], context, raisewarning)
-        seriesmovingaverage = moving_average(
-            series, context['smoothing-window'])
-        seriesderivativeresult = derivativewrapper(
-            seriesmovingaverage, 'linear')
+        # Get the series we are calculating the rate for
+        series = series_by_name(seriesname[0], context)
+        # Calculate the moving average of the series
+        seriesmovingaverage = moving_average(series, context['smoothing-window'])
+        # Calculate the derivative of the series
+        seriesderivativeresult = derivativewrapper(seriesmovingaverage, 'linear')
+        
         if len(derivativeresult) != len(seriesderivativeresult):
-            print('Error: length of uptime derivative results != series derivative results')
+            print('Error: length of uptime derivative result != length of series derivative result. \
+                   See function expr_fun_table(fname, seriesname, context).')
             return []
+        
         result = []
+        # Iterate through all the results for the derivative of uptime.
+        # If any of the derivative results are negative replace them with None.
         for x in range(len(derivativeresult)):
             if derivativeresult[x][1] < 0:
                 result.append([seriesderivativeresult[x][0], None])
@@ -277,41 +300,47 @@ def expr_fun_table(fname, seriesname, context, raisewarning):
         return result
 
     else:
-        print('Error do not recognise function')
-        return series_by_name(seriesname[0], context, raisewarning)
+        print('Error do not recognise function in expr_fun_table(fname, seriesname, context)')
+        return []
 
 
-def expr_evaluate(exprtree, context, raisewarning):
+def expr_evaluate(exprtree, context):
+    """ Recursive function for performing traversal of Abstract Syntax Tree. """
     if isinstance(exprtree, Number):
         return float(exprtree[0])
     elif isinstance(exprtree, Identifier):
-        return series_by_name(exprtree[0], context, raisewarning)
+        return series_by_name(exprtree[0], context)
     elif isinstance(exprtree, FunctionCall):
-        return expr_fun_table(exprtree[0], exprtree[1], context, raisewarning)
+        return expr_fun_table(exprtree[0], exprtree[1], context)
     elif isinstance(exprtree, Mul):
-        op1 = expr_evaluate(exprtree[0], context, raisewarning)
-        op2 = expr_evaluate(exprtree[1], context, raisewarning)
+        op1 = expr_evaluate(exprtree[0], context)
+        op2 = expr_evaluate(exprtree[1], context)
         return multiplying(op1, op2)
     elif isinstance(exprtree, Div):
-        op1 = expr_evaluate(exprtree[0], context, raisewarning)
-        op2 = expr_evaluate(exprtree[1], context, raisewarning)
+        op1 = expr_evaluate(exprtree[0], context)
+        op2 = expr_evaluate(exprtree[1], context)
         return dividing(op1, op2)
     elif isinstance(exprtree, Sub):
-        op1 = expr_evaluate(exprtree[0], context, raisewarning)
-        op2 = expr_evaluate(exprtree[1], context, raisewarning)
+        op1 = expr_evaluate(exprtree[0], context)
+        op2 = expr_evaluate(exprtree[1], context)
         return subtracting(op1, op2)
     elif isinstance(exprtree, Add):
-        op1 = expr_evaluate(exprtree[0], context, raisewarning)
-        op2 = expr_evaluate(exprtree[1], context, raisewarning)
+        op1 = expr_evaluate(exprtree[0], context)
+        op2 = expr_evaluate(exprtree[1], context)
         return adding(op1, op2)
 
 
-def expr_eval_string(expr, contextDictionary, raisewarning):
-    # remove whitespace from start & end of the string
-    # can't see whenever this is required however in the original mortimer
+def expr_eval_string(expr, contextDictionary):
+    """ wrapper function for fully parsing the query expression, then
+        evaluating the expression returning the data.  If expression cannot
+        be parsed or there is no data then the empty list is returned. """
+    # Remove whitespace from start & end of the string.
+    # Can't see whenever this is required however in the original mortimer.
     expr = expr.strip()
+    # Uses the lepl module to parse the expression into an Abstract Syntax Tree.
     parsedExpression = parse_expr(expr, contextDictionary)
     result = []
+    # If successfully parsed the expression try to evaluate it.
     if parsedExpression != '':
-        result = expr_evaluate(parsedExpression[0], contextDictionary, raisewarning)
+        result = expr_evaluate(parsedExpression[0], contextDictionary)
     return result
