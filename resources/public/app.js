@@ -628,7 +628,7 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
     
     
   var mystats = null;
-  $http.get('/stats').success(function(data) {mystats = data;});
+  $http.get('/statsdesc').success(function(data) {mystats = data;});
 
   $scope.applyPreset = function(preset, e) {
     // Daniel Owen - Set updating to true to stop graphs being drawn prematurely.
