@@ -270,7 +270,8 @@ if __name__ == '__main__':
     logging.debug('finished loading zip fles')
     globals.loading_file = False
     message = {'kind': 'status-update', 'data': {'files': web_server.list_files(), 'loading': {}, 'buckets': web_server.list_buckets()}}
-    globals.messageq.put(message)
+    for k,v in globals.messageq.items():
+        v.put(message)
 
     # Wait for user to press ctl-C
     signal.pause()

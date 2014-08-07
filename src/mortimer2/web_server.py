@@ -9,6 +9,8 @@ import tornado.web
 import threading
 import logging
 import json
+import Queue
+
 # Note: when porting to python 3 urllib.unquote needs changing to
 # urllib.parse.unquote
 from urllib import unquote
@@ -114,7 +116,8 @@ def multistat_response(queries):
 
     if missing_data:
         message = {'kind': 'warning', 'short': 'Missing data', 'extra': ''}
-        globals.messageq.put(message)
+        for k,v in globals.messageq.items():
+            v.put(message)
 
     # iterate through the sorted and non-duplicate times
     for t in times:
@@ -168,6 +171,11 @@ def send_session(websocket):
     jsonmessage = json.dumps(message)
     logging.debug(jsonmessage)
     websocket.write_message(jsonmessage)
+    message = {'kind': 'status-update', 'data': {'files': list_files(), 'loading': {}, 'buckets': list_buckets()}}
+    jsonmessage = json.dumps(message)
+    logging.debug(jsonmessage)
+    websocket.write_message(jsonmessage)
+
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -176,18 +184,26 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         logging.debug('New web socket connection opened.')
         # send session data update
         send_session(self)
-        self.callback = tornado.ioloop.PeriodicCallback(self.send_update, 250)
+        globals.messageq[str(self)] = Queue.Queue()
+        self.callback = tornado.ioloop.PeriodicCallback(self.send_update, 100)
         self.callback.start()
 
     def on_message(self, message):
-        logging.debug('>essage received %s.' % message)
+        logging.debug('Message received %s.' % message)
+        decodedmessage = json.loads(message)
+        for k,v in globals.messageq.items():
+            v.put(decodedmessage)
 
     def on_close(self):
         logging.debug('Web socket connection closed.')
-        self.callback.stop()
+        try:
+            self.callback.stop()
+            del globals.messageq[str(self)]
+        except:
+            logging.debug('Web socket no longer exists.')
 
     def send_update(self):
-        """ This function is called every 250ms and send a message if files are being loaded.
+        """ This function is called every 100ms and send a message if files are being loaded.
             Or there are any messages in the message queue. """
         if globals.loading_file:
             files_being_loaded = {}
@@ -198,11 +214,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                                                          'loading': files_being_loaded, 'buckets': []}}
             jsonmessage = json.dumps(message)
             self.write_message(jsonmessage)
-    
-        while not globals.messageq.empty():
-            message = globals.messageq.get()
-            jsonmessage = json.dumps(message)
-            self.write_message(jsonmessage)
+      
+        try:
+            while not globals.messageq[str(self)].empty():
+                message = globals.messageq[str(self)].get()
+                jsonmessage = json.dumps(message)
+                self.write_message(jsonmessage)
+        except:
+            logging.debug('Web socket no longer exists.')
 
 
 class MainHandler(tornado.web.RequestHandler):

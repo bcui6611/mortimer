@@ -1,43 +1,57 @@
-# mortimer
+# mortimer2
 
-[![Build Status](https://drone.io/github.com/couchbaselabs/mortimer/status.png)](https://drone.io/github.com/couchbaselabs/mortimer/latest)
+Mortimer2 is a port of the original mortimer, replacing the backend written in clojure with one written in python.  The motivation for doing this was to enable Support to more easily modify and add features.     
 
-Currently I can
+It currently has all the existing features of the original mortimer, see below:-
 
  * Read ep\_engine stat information from `ns_server.stats.log` in `cbcollect_info` zip files (2.0+)
  * Graph those on a Web UI
 
-TODOs: [see tag `mortimer` on cbugg][cbg]
+Plus the following additions/improvements:-
 
-File feature requests and bugs on
-[cbugg](http://cbugg.hq.couchbase.com/), and tag them `mortimer`
+ * Shows graph with the date/time in the logs
+ * When place cursor over stat name provide stats description.
+ 
+The stat descriptions are automatically downloaded from the [ep-engine](http://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org) repository, each time mortimer2 is started.  Therefore mortimer2 requies an external internet connection.
+ 
+Mortimer2 requires either pypy or python 2.7 to be installed.  In addition the following two python modules are required:-
+ 
+ 1. tornado - provides web server and web socket functionality
+ 2. lepl - provides grammar parsing functionality.
+ 
+For best performance it is recommended to install pypy.  See [pypy.org](http://pypy.org) for more details.  You will also need to install pypy versions of the tornado and lepl modules.  First you need to install pip_pypy (pip for pypy).  On Mac (OSX) this can be achieved as follows:-
 
-[cbg]: http://cbugg.hq.couchbase.com/search/tags:mortimer%20AND%20status:(inbox%20OR%20new%20OR%20open%20OR%20inprogress)
+	wget http://python-distribute.org/distribute_setup.py
+	wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+	pypy distribute_setup.py
+	pypy get-pip.py
 
-Download the .jar at <http://s3.amazonaws.com/cb-support/mortimer-build/mortimer.jar>
+Now you should be able to install the required modules.  On Mac (OSX) this can be done as follows:-
+ 
+	/usr/local/share/pypy/pip_pypy install tornado
+	/usr/local/share/pypy/pip_pypy install lepl
 
-To run from a git checkout, install [Leiningen][lein]. Now any
-`java -jar ~/path/to/mortimer.jar` command below can be replaced with
-typing `lein run --` in the checkout
-directory:
-
-    lein run -- -d /my/directory/of/zips
-
-[lein]: https://github.com/technomancy/leiningen
-
+If you decide not to use pypy, then python 2.7 can be used.  Again you need to install pip.  On Mac (OSX) this can be done by typing the following:-
+ 
+	sudo easy_install pip
+	
+Using pip the extra two modules can be installed as follows:-
+ 
+    pip install tornado
+	pip install lepl
+	
 # How to Use
 
-## Starting mortimer
+## Starting mortimer2
 
-Mortimer is a JVM application. Download the .jar, and place it in a
-well known location.
+To run mortimer2, simply type:-
 
-To run it, type
-
-    java -jar ~/path/to/mortimer.jar
+    ./mortimer2
+    
+If pypy is installed, mortimer2 will automatically use it, otherwise it will default to use the standard python intepreter.    
 
 By default, the current working directory will be searched for
-`cbcollect_info` ZIP files, and the mortimer web UI will be started on
+`cbcollect_info` ZIP files, and the mortimer2 web UI will be started on
 port 18334.
 
 Each of these can be changed with command line flags.
@@ -46,31 +60,12 @@ Each of these can be changed with command line flags.
 
       Switches                   Default  Desc
       --------                   -------  ----
+      -h, --help                 no-help  show this help message and exit
       -p, --port                 18334    Start webserver on this port
       -d, --dir                  .        Directory to search for collectinfo .zips
-      -v, --no-debug, --debug    false    Enable debugging messages
-      -u, --no-update, --update  true     Check for updates
-      -n, --no-browse, --browse  true     Auto open browser
-      -h, --no-help, --help      false    Display help
+      -v, --debug                false    Enable debugging messages
+      -n, --browse               true     Auto open browser
 
-If loading files is slow (or you get an `OutOfMemoryError` exception),
-try giving the JVM more RAM:
-
-    java -Xmx2g -jar ~/path/to/mortimer.jar
-
-Adding the option `-Djava.awt.headless=true` to the `java` command line
-to prevent java from unecessarily adding an icon to your OSX dock.
-
-    java -Djava.awt.headless=true -jar ~/path/to/mortimer.jar
-
-It can be useful to keep mortimer in a well known location and create a
-shell alias to launch it:
-
-    wget -O ~/mortimer.jar http://s3.crate.im/mortimer-build/mortimer.jar
-
-And in your `.bashrc` or equivalent:
-
-    alias mortimer='java -Djava.awt.headless=true -jar ~/mortimer.jar'
 
 ## Keyboard Shortcuts
 
@@ -118,9 +113,6 @@ Memory remaining before reaching 90% of `ep_max_data_size`:
 
     (ep_max_data_size * 0.9) - mem_used
 
-**NOTE**: Order-of-operations is currently *not* followed. If
-you use `-` or `/`, you should use parentheses to indicate
-the intended order of evaluation.
 
 ## Charting series
 
@@ -143,7 +135,7 @@ again.
 
 ## Presets
 
-Mortimer comes with preset combinations of series selections that are
+Mortimer2 comes with preset combinations of series selections that are
 commonly useful.
 
 You can also *save* your current selection of series as a preset using the
