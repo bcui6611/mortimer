@@ -12,33 +12,22 @@ Plus the following additions/improvements:-
  * Shows graph with the date/time in the logs
  * When place cursor over stat name provide stats description.
  
-The stat descriptions are automatically downloaded from the [ep-engine](http://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org) repository, each time mortimer2 is started.  Therefore mortimer2 requies an external internet connection.
+Each time mortimer2 is started the stat descriptions are automatically downloaded from the [ep-engine](http://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org) repository.  Therefore mortimer2 requires a working external internet connection.
  
-Mortimer2 requires either pypy or python 2.7 to be installed.  In addition the following two python modules are required:-
+Mortimer2 requires either `pypy` or `python 2.7.x` to be installed.  In addition the following two python modules are required:-
  
- 1. tornado - provides web server and web socket functionality
- 2. lepl - provides grammar parsing functionality.
+ 1. `tornado` - provides web server and web socket functionality
+ 2. `lepl` - provides grammar parsing functionality.
  
-For best performance it is recommended to install pypy.  See [pypy.org](http://pypy.org) for more details.  You will also need to install pypy versions of the tornado and lepl modules.  First you need to install pip_pypy (pip for pypy).  On Mac (OSX) this can be achieved as follows:-
+For best performance it is recommended to install `pypy`.  See [pypy.org](http://pypy.org) for more details.  You will also need to install pypy versions of the tornado and lepl modules.  This can be achieved using `easy_install`.  The install instructions for Mac (OSX) are:-
+ 
+	/usr/local/share/pypy/easy_install tornado
+	/usr/local/share/pypy/easy_install lepl
 
-	wget http://python-distribute.org/distribute_setup.py
-	wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
-	pypy distribute_setup.py
-	pypy get-pip.py
-
-Now you should be able to install the required modules.  On Mac (OSX) this can be done as follows:-
+If you decide not to use pypy, then python 2.7.x can be used.  On Mac (OSX) the extra two modules can be installed as follows:-
  
-	/usr/local/share/pypy/pip_pypy install tornado
-	/usr/local/share/pypy/pip_pypy install lepl
-
-If you decide not to use pypy, then python 2.7 can be used.  Again you need to install pip.  On Mac (OSX) this can be done by typing the following:-
- 
-	sudo easy_install pip
-	
-Using pip the extra two modules can be installed as follows:-
- 
-    pip install tornado
-	pip install lepl
+    /usr/bin/easy_install tornado
+	/usr/bin/easy_install lepl
 	
 # How to Use
 
