@@ -69,8 +69,7 @@ def parse_expr(expr, context):
         result = my_Expr.parse(expr)
         return result
     except:
-        message = {'kind': 'error', 'short': 'Parsing Error, could not parse ' + str(expr), 'extra': ''}
-        globals.messageq.put(message)
+        logging.debug("Could not parse the expression " + str(expr))
         return ''
 
 

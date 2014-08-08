@@ -115,7 +115,7 @@ def multistat_response(queries):
             missing_data = True
 
     if missing_data:
-        message = {'kind': 'warning', 'short': 'Missing data', 'extra': ''}
+        message = {'kind': 'warning', 'short': 'Missing data or parsing error', 'extra': ''}
         for k,v in globals.messageq.items():
             v.put(message)
 
