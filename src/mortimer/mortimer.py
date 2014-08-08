@@ -28,7 +28,7 @@ import web_server
 
 """ This is the top level file for running Mortimer2.  It is responsible for loading the data
     and starting the the web server.  The program relies on three other python files:-
-    1) globals.py - contains the globals variables used by mortimer2
+    1) globals.py - contains the globals variables used by mortimer
     2) grammar.py - contains functionality for parsing user query and providing back the data
     3) web_server.py - contains functionality for running the web server. 
     
@@ -218,9 +218,9 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.DEBUG)
     logging.debug(args)
 
-    # Find the relative path for where mortimer2.py was run
+    # Find the relative path for where mortimer.py was run
     relativepath = './'
-    matchObj= re.match(r'(.*)mortimer2.py$', sys.argv[0], re.I)
+    matchObj= re.match(r'(.*)mortimer.py$', sys.argv[0], re.I)
     if matchObj and matchObj.group(1) != '':
         relativepath = matchObj.group(1)
     logging.debug('relativepath = ' + relativepath)
