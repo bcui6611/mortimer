@@ -2,7 +2,7 @@ import Queue
 from threading import Lock
 from threading import local
 
-versionnumber = 1.0
+versionnumber = 2.0
 
 loading_file = False
 
