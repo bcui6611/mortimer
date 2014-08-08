@@ -50,7 +50,9 @@ def argumentParsing():
     parser.add_argument(
         '-u', '--update', action='store_true', default=False, help='Check for updates')
     parser.add_argument('-e', '--diag', action='store_true',
-                        default=False, help='Read diag.log (events)')
+                        default=False, help='Read diag.log (events). This currently not supported')
+    parser.add_argument('--version',  action='store_true',
+                        default=False, help='Prints out the version number of mortimer')
     return parser.parse_args()
 
 
@@ -217,6 +219,10 @@ if __name__ == '__main__':
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
     logging.debug(args)
+
+    if args.version:
+        print("Version:" + str(globals.versionnumber))
+        exit(0)
 
     # Find the relative path for where mortimer.py was run
     relativepath = './'

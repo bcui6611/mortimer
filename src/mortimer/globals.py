@@ -2,6 +2,8 @@ import Queue
 from threading import Lock
 from threading import local
 
+versionnumber = 1.0
+
 loading_file = False
 
 sessionData = {'smoothing-window': 0}

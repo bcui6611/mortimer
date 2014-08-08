@@ -1,46 +1,42 @@
-# mortimer2
+# mortimer
 
-Mortimer2 is a port of the original mortimer, replacing the backend written in clojure with one written in python.  The motivation for doing this was to enable Support to more easily modify and add features.     
-
-It currently has all the existing features of the original mortimer, see below:-
+Currently I can:-
 
  * Read ep\_engine stat information from `ns_server.stats.log` in `cbcollect_info` zip files (2.0+)
  * Graph those on a Web UI
 
-Plus the following additions/improvements:-
+The following additions/improvements have been made over the original clojure implementation:-
 
  * Shows graph with the date/time in the logs
  * When place cursor over stat name provide stats description.
  
-Each time mortimer2 is started the stat descriptions are automatically downloaded from the [ep-engine](http://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org) repository.  Therefore mortimer2 requires a working external internet connection.
- 
-Mortimer2 requires either `pypy` or `python 2.7.x` to be installed.  In addition the following two python modules are required:-
+Mortimer requires either `pypy` or `python 2.7.x` to be installed.  In addition the following two python modules are required:-
  
  1. `tornado` - provides web server and web socket functionality
  2. `lepl` - provides grammar parsing functionality.
  
-For best performance it is recommended to install `pypy`.  See [pypy.org](http://pypy.org) for more details.  You will also need to install pypy versions of the tornado and lepl modules.  This can be achieved using `easy_install`.  The install instructions for Mac (OSX) are:-
+For best performance it is recommended to install `pypy`.  See [pypy.org](http://pypy.org) for more details.  You will also need to install pypy versions of the tornado and lepl modules.  This can be achieved using `pip_pypy` or the pypy version of `easy_install`.  The install instructions for Mac (OSX) are:-
  
 	/usr/local/share/pypy/easy_install tornado
 	/usr/local/share/pypy/easy_install lepl
 
-If you decide not to use pypy, then python 2.7.x can be used.  On Mac (OSX) the extra two modules can be installed as follows:-
+If you decide not to use pypy, then python 2.7.x can be used.  On Mac (OSX) the two extra modules can be installed as follows:-
  
     /usr/bin/easy_install tornado
 	/usr/bin/easy_install lepl
 	
 # How to Use
 
-## Starting mortimer2
+## Starting mortimer
 
-To run mortimer2, simply type:-
+To run mortimer, simply type:-
 
-    ./mortimer2
+    ./mortimer
     
-If pypy is installed, mortimer2 will automatically use it, otherwise it will default to use the standard python intepreter.    
+If pypy is installed, mortimer will automatically use it, otherwise it will default to use the standard python intepreter.    
 
 By default, the current working directory will be searched for
-`cbcollect_info` ZIP files, and the mortimer2 web UI will be started on
+`cbcollect_info` ZIP files, and the mortimer web UI will be started on
 port 18334.
 
 Each of these can be changed with command line flags.

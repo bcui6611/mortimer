@@ -3,7 +3,10 @@ import urllib2
 
 
 def get_stats_desc():
-    stats_file = urllib2.urlopen('https://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org')
+    ''' The stats.org file is a copy of the following file from the ep-engine repository
+        https://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org'''
+    
+    stats_file = open('./resources/stats.org', 'r')
     statsdesc = {}
     previous = None
     for line in stats_file:
@@ -25,4 +28,5 @@ def get_stats_desc():
                     previous = stat.strip()
                 elif desc:
                     statsdesc[previous] += " {0}".format(desc.strip())
+    stats_file.close()
     return statsdesc
