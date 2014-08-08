@@ -1,6 +1,4 @@
 import re
-import urllib2
-
 
 def get_stats_desc():
     ''' The stats.org file is a copy of the following file from the ep-engine repository

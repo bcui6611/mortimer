@@ -17,7 +17,6 @@ import string
 import Queue
 import sys
 
-
 from os import _exit
 from os import walk
 from io import TextIOWrapper
@@ -47,10 +46,8 @@ def argumentParsing():
                         default=False, help='Enable debugging messages')
     parser.add_argument(
         '-n', '--browse', action='store_false', default=True, help='Auto open browser')
-    parser.add_argument(
-        '-u', '--update', action='store_true', default=False, help='Check for updates')
     parser.add_argument('-e', '--diag', action='store_true',
-                        default=False, help='Read diag.log (events). This currently not supported')
+                        default=False, help='Read diag.log (events). This is currently not supported')
     parser.add_argument('--version',  action='store_true',
                         default=False, help='Prints out the version number of mortimer')
     return parser.parse_args()

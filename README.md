@@ -50,6 +50,8 @@ Each of these can be changed with command line flags.
       -d, --dir                  .        Directory to search for collectinfo .zips
       -v, --debug                false    Enable debugging messages
       -n, --browse               true     Auto open browser
+      -e, --diag                 Read diag.log (events). This is currently not supported
+      --version                  Prints out the version number of mortimer
 
 
 ## Keyboard Shortcuts
