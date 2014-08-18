@@ -24,6 +24,7 @@ from io import TextIOWrapper
 import globals
 import grammar
 import web_server
+from node_events import node_events
 
 """ This is the top level file for running Mortimer2.  It is responsible for loading the data
     and starting the the web server.  The program relies on three other python files:-
@@ -46,8 +47,8 @@ def argumentParsing():
                         default=False, help='Enable debugging messages')
     parser.add_argument(
         '-n', '--browse', action='store_false', default=True, help='Auto open browser')
-    parser.add_argument('-e', '--diag', action='store_true',
-                        default=False, help='Read diag.log (events). This is currently not supported')
+    parser.add_argument('-e', '--events', action='store_true',
+                        default=False, help='Load node events/errors (warning can slow down loading time)')
     parser.add_argument('--version',  action='store_true',
                         default=False, help='Prints out the version number of mortimer')
     return parser.parse_args()
@@ -170,6 +171,7 @@ def load_collectinfo(filename, args):
         a zip file. """
     # First open the zipfle for reading.
     file = zipfile.ZipFile(args.dir + '/' + filename, 'r')
+
     # Now search the zip file for the stats file.
     stats_file = ''
     diag_file = ''
@@ -188,11 +190,16 @@ def load_collectinfo(filename, args):
     logging.debug('diag_file= ' + diag_file)
     globals.threadLocal.stats = {}
     globals.threadLocal.stats[filename] = dict()
+
     # Get the stats for this zip files and place in thread local storage.
     stats_parse(globals.threadLocal.stats.get(filename), file, stats_file, filename)
+
+    if args.events:
+        globals.threadLocal.node_events = node_events()
+        globals.threadLocal.node_events.add_interesting_events(globals.threadLocal.stats.get(filename), file, filename)
+
     # Add the thread local stats into the queue so can be collected by main thread.
     globals.q.put(globals.threadLocal.stats)
-
 
 def signal_handler(signal, frame):
     """ Signal handler for SIGINT to terminate all threads.   """
