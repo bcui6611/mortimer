@@ -1,3 +1,4 @@
+import os
 from setuptools import setup
 
 setup(
@@ -6,8 +7,7 @@ setup(
     version = '2.0.0',
     author_email = 'jim@couchbase.com',
     packages = ['mortimer'],
-    package_dir={'':'src'},
-    scripts=["mortimer"],
+    scripts=[os.path.join('bin', 'mortimer')],
     include_package_data = True,
     install_requires = ['tornado', 'lepl'],
     license = 'Copyright 2014 Couchbase',
