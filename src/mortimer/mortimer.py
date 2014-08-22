@@ -214,8 +214,7 @@ def signal_handler(signal, frame):
     3. Starting the web server
     4. Opening the web browser
     5. Loading in all the stats files. """
-if __name__ == '__main__':
-    
+def main():
     signal.signal(signal.SIGINT, signal_handler)
     
     # Parse the arguments given.
@@ -285,3 +284,9 @@ if __name__ == '__main__':
 
     # Wait for user to press ctl-C
     signal.pause()
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
+
