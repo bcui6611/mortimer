@@ -1,9 +1,8 @@
-#!/bin/sh
-export MORTIMER="$(cd $(dirname "$0") && pwd)"
+#!/usr/bin/env python2.7
 
-# ~4x faster under pypy (if available)
-if hash pypy 2>/dev/null; then
-    pypy $MORTIMER/src/mortimer/mortimer.py $@
-else
-    exec $MORTIMER/src/mortimer/mortimer.py $@
-fi
+import sys
+from mortimer import main
+
+if __name__ == '__main__':
+    sys.exit(main())
+
