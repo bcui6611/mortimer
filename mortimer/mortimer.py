@@ -3,6 +3,7 @@
 
 #from __future__ import unicode_literals, print_function
 import zipfile
+import inspect
 import os.path
 import re
 import argparse
@@ -227,8 +228,8 @@ def main():
         print("Version:" + str(globals.versionnumber))
         exit(0)
 
-    # Find the relative path for where mortimer.py was run
-    relativepath = './'
+    # Find the path for the mortimer package
+    relativepath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     matchObj= re.match(r'(.*)mortimer.py$', sys.argv[0], re.I)
     if matchObj and matchObj.group(1) != '':
         relativepath = matchObj.group(1)
