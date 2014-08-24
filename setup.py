@@ -24,5 +24,6 @@ setup(
         'Topic :: Internet :: Log Analysis',
         'Programming Language :: Python :: 2',
     ],
+    zip_safe=False,
 )
 
