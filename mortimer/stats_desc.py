@@ -1,10 +1,10 @@
 import re
 
-def get_stats_desc():
+def get_stats_desc(relativepath):
     ''' The stats.org file is a copy of the following file from the ep-engine repository
         https://raw.githubusercontent.com/membase/ep-engine/master/docs/stats.org'''
     
-    stats_file = open('./resources/stats.org', 'r')
+    stats_file = open(relativepath + '/resources/stats.org', 'r')
     statsdesc = {}
     previous = None
     for line in stats_file:

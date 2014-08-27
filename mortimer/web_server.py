@@ -230,7 +230,7 @@ class MainHandler(tornado.web.RequestHandler):
         self.relativepath = relativepath
     
     def get(self):
-        self.render(self.relativepath + '../../resources/public/index.html')
+        self.render(self.relativepath + '/resources/public/index.html')
 
 
 class FileHandler(tornado.web.RequestHandler):
@@ -257,8 +257,11 @@ class StatsHandler(tornado.web.RequestHandler):
 
 class StatsDescHandler(tornado.web.RequestHandler):
     """ Class for callback handler to provide stats descriptions. """
+    def initialize(self, relativepath):
+        self.relativepath = relativepath
+
     def get(self):
-        resource = json.dumps(stats_desc.get_stats_desc())
+        resource = json.dumps(stats_desc.get_stats_desc(self.relativepath))
         self.write(resource)
 
 class StatDataHandler(tornado.web.RequestHandler):
@@ -292,13 +295,13 @@ class WebServer (threading.Thread):
         application = tornado.web.Application([
             (r'/status-ws', WSHandler),
             (r'/stats', StatsHandler),
-            (r'/statsdesc', StatsDescHandler),
+            (r'/statsdesc', StatsDescHandler, {'relativepath': self.relativepath}),
             (r'/', MainHandler, {'relativepath': self.relativepath}),
             (r'/buckets', BucketHandler),
             (r'/files', FileHandler),
             (r'/statdata', StatDataHandler),
             (r'/(.*)', tornado.web.StaticFileHandler,
-             {'path': self.relativepath + '../../resources/public'})
+             {'path': self.relativepath + '/resources/public'})
         ])
         http_server = tornado.httpserver.HTTPServer(application)
         http_server.listen(self.port)

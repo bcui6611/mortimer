@@ -3,6 +3,7 @@
 
 #from __future__ import unicode_literals, print_function
 import zipfile
+import inspect
 import os.path
 import re
 import argparse
@@ -214,8 +215,7 @@ def signal_handler(signal, frame):
     3. Starting the web server
     4. Opening the web browser
     5. Loading in all the stats files. """
-if __name__ == '__main__':
-    
+def main():
     signal.signal(signal.SIGINT, signal_handler)
     
     # Parse the arguments given.
@@ -228,8 +228,8 @@ if __name__ == '__main__':
         print("Version:" + str(globals.versionnumber))
         exit(0)
 
-    # Find the relative path for where mortimer.py was run
-    relativepath = './'
+    # Find the path for the mortimer package
+    relativepath = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     matchObj= re.match(r'(.*)mortimer.py$', sys.argv[0], re.I)
     if matchObj and matchObj.group(1) != '':
         relativepath = matchObj.group(1)
@@ -285,3 +285,9 @@ if __name__ == '__main__':
 
     # Wait for user to press ctl-C
     signal.pause()
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
+

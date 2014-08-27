@@ -4,6 +4,9 @@
 /checkouts
 /docs
 /mortimer-build
+/build
+/dist
+*.egg-info
 resources/git-rev.txt
 pom.xml
 pom.xml.asc
@@ -18,3 +21,4 @@ pom.xml.asc
 *.xcworkspacedata
 *.xcuserstate
 *.zip
+*.swp

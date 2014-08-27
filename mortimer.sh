@@ -3,7 +3,7 @@ export MORTIMER="$(cd $(dirname "$0") && pwd)"
 
 # ~4x faster under pypy (if available)
 if hash pypy 2>/dev/null; then
-    pypy $MORTIMER/src/mortimer/mortimer.py $@
+    pypy $MORTIMER/mortimer/mortimer.py $@
 else
-    exec $MORTIMER/src/mortimer/mortimer.py $@
+    exec $MORTIMER/mortimer/mortimer.py $@
 fi
