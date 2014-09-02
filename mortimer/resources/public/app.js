@@ -571,7 +571,10 @@ function DataCtrl($scope, $http, $log, $dialog, $timeout, $document, StatusServi
       var points = data.points;
       $scope.seriesnames = data.stats;
       for(p in points) {
-        points[p][0] = new Date(points[p][0]);
+        var d = new Date(points[p][0]);
+        // Ensure date isn't offsetted to localtime
+        d.setUTCHours(d.getUTCHours() + (d.getTimezoneOffset()/60))
+        points[p][0] = d;
       }
       g.updateOptions({
         file: points,

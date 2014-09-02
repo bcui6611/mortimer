@@ -72,7 +72,6 @@ def parse_expr(expr, context):
         logging.debug("Could not parse the expression " + str(expr))
         return ''
 
-
 def series_by_name(seriesname, context):
     keysDictionary = {'keys': [context['file'], context['bucket']]}
     file = context['file']
@@ -85,7 +84,7 @@ def series_by_name(seriesname, context):
     result = []
     for x in data:
         try:
-            result.append([x['time'], x[seriesname]])
+            result.append([x['localtime'], x[seriesname]])
         except:
             return []
     return result

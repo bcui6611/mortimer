@@ -1,17 +1,16 @@
 # Module that allows events from other logs to be included in the stats blob.
 # Thus you can plot errors/events against stats
 
-import pprint
 import zipfile
-import os
 import re
 import datetime
 import calendar
 import tempfile
 import time
+import mortimer
 from datetime import datetime
 
-class node_events:
+class NodeEvents:
 
     events = {
     'memcached.log': [
@@ -68,20 +67,9 @@ class node_events:
         if 'bucketr' in event_data:
             bucket = self.extract_bucket(line, event_data['bucketr'])
 
-        if bucket is None:
-            # should use @system, but that's broken.
-            for bucket_name in node_dictionary.keys():
-                if bucket_name != "@system":
-                    bucket = bucket_name
-                    if not self.printed_mcd_bucket_name:
-                        print "{}: Using \"{}\" as the bucket for events with no bucket (@system not working)".format(self.filename, bucket)
-                        self.printed_mcd_bucket_name = True
-                        self.mcd_bucket_name = bucket
-                    break
-
-        # bucket deleted, skip
-        if bucket not in node_dictionary:
-            return
+        if not self.printed_mcd_bucket_name:
+            print "{}: Using \"{}\" as the bucket for events with no bucket.".format(self.filename, self.mcd_bucket_name)
+            self.printed_mcd_bucket_name = True
 
         time_stamp = re.search(self.time_regexp[log_name]['re'], line).group(1)
 
@@ -90,91 +78,45 @@ class node_events:
         else:
             time_struct = datetime.strptime(time_stamp, self.time_regexp[log_name]['strptime'])
             epochtime = calendar.timegm(time_struct.timetuple())
-      
-        # Now the joyous task of finding the correct place to shove this data :D
-        bucket_data = node_dictionary[bucket]
 
-        time1 = bucket_data[0]['localtime']
+        if bucket not in node_dictionary:
+            node_dictionary[bucket] = {}
+        if event_data['key'] not in node_dictionary[bucket]:
+            node_dictionary[bucket][event_data['key']] = []
 
-        lo = 0
-        hi = len(bucket_data)
-        upper_bound = hi
-
-        if bucket_data[-1]['localtime'] < epochtime:
-            # Our epochtime is above the last one.
-            self.events_above = self.events_above + 1
-            return
-
-        if bucket_data[0]['localtime'] > epochtime:
-            # Our epochtime is below the first one.
-            self.events_below = self.events_below + 1
-            return
-
-        # localtime and our epochtime is unlikely to line up
-        # Find a best match for our update
-        # binary search, but compare a and a+1,a-1 with our time.
-        while lo < hi:
-            mid = (lo + hi) / 2
-
-            if bucket_data[mid]['localtime'] < epochtime:
-                # are we inbetween mid and mid+1?
-                if bucket_data[mid+1]['localtime'] >= epochtime:
-
-                    # Are we closest to mid or mid + 1?
-                    z1 = abs(bucket_data[mid]['localtime'] - epochtime)
-                    z2 = abs(bucket_data[mid+1]['localtime'] - epochtime)
-                    if z1 <= z2:
-                        index = mid + 1
-                    else:
-                        index = mid
-
-                    bucket_data[index][event_data['key']] = bucket_data[index][event_data['key']] + 1
-                    break
-                lo = mid + 1
-            elif bucket_data[mid]['localtime'] > epochtime:
-                # are we inbetween mid and mid-1?
-                if bucket_data[mid-1]['localtime'] <= epochtime:
-
-                    # Are we closest to mid or mid - 1?
-                    z1 = abs(bucket_data[mid]['localtime'] - epochtime)
-                    z2 = abs(bucket_data[mid-1]['localtime'] - epochtime)
-                    if z1 <= z2:
-                        index = mid - 1
-                    else:
-                        index = mid
-
-                    bucket_data[index][event_data['key']] = bucket_data[index][event_data['key']] + 1
-                    break
-                hi = mid
-            # Might get lucky with a direct match...
-            elif bucket_data[mid]['localtime'] == epochtime:
-                bucket_data[mid][event_data['key']] = bucket_data[mid][event_data['key']] + 1
-                break
+        # Store the event for later processing
+        node_dictionary[bucket][event_data['key']].append(epochtime)
 
     def process_log(self, node_dictionary, log_name, file):
-
         ev = self.events[log_name]
         if ev:
-            # First one linear iteration to add our event with 0 hits.
-            # every time slice needs the stat and a count, even if 0.
-            # keys is the name of each bucket
-            for entry in ev:
-                for bucket in node_dictionary.keys():
-                    list = node_dictionary[bucket]
-                    for data in list:
-                        data[entry['key']] = 0
-
             # Now scan for the presence of our event.
+            lines = 0
             for line in file:
+                lines += 1
+                self.progress_size += len(line)
                 for entry in ev:
                     if entry['event'] in line:
                         self.add_to_stats(node_dictionary, log_name, entry, line)
+                # Report progress every 300 lines
+                if lines == 300:
+                    lines = 0
+                    mortimer.update_progress_so_far(self.progress_queue, self.total_size, self.progress_size)
         else:
             print "No event entries for {}\n".format(log_name)
 
     def add_interesting_events(self, node_dictionary, zipfile, zipfilename):
         t = time.clock()
         self.filename = zipfilename
+
+        # Figure out sizes for progress reporting
+        for key in self.events.keys():
+            for name in zipfile.namelist():
+                if name.endswith('/' + key):
+                    self.total_size += zipfile.getinfo(name).file_size
+
+        mortimer.update_progress_so_far(self.progress_queue, self.total_size, self.progress_size)
+
         for key in self.events.keys():
             for name in zipfile.namelist():
                 if name.endswith('/' + key):
@@ -186,19 +128,98 @@ class node_events:
                     self.year = int((datetime(zipfile.getinfo(name).date_time[0], 1, 1) - datetime(1970,1,1)).total_seconds())
                     self.process_log(node_dictionary, key, tf)
                     tf.close()
+
         self.process_time = time.clock() - t
 
-        if self.events_above > 0:
-            print "{}: {} events were above the stats range, and not recorded.".format(self.filename, self.events_above)
+        mortimer.update_progress_so_far(self.progress_queue, self.total_size, self.total_size)
 
-        if self.events_below > 0:
-            print "{}: {} events were below the stats range, and not recorded.".format(self.filename, self.events_below)
+        print "{}: Processing of node events took {} seconds".format(self.filename, self.process_time)
 
-        print "{}: Processing of events took {} seconds".format(self.filename, self.process_time)
-
-    def __init__(self):
+    def __init__(self, progress_queue):
         self.printed_mcd_bucket_name = False
-        self.mcd_bucket_name = None
-        self.events_below = 0
-        self.events_above = 0
+        self.mcd_bucket_name = "@system"
+        self.total_size = 0
+        self.progress_size = 0
+        self.progress_queue = progress_queue
 
+def insert_stat(bucket_data, event, timestamp):
+    lo = 0
+    hi = len(bucket_data)
+    upper_bound = hi
+
+    if bucket_data[-1]['localtime'] < timestamp:
+        # Our timestamp is above the last one.
+        return
+
+    if bucket_data[0]['localtime'] > timestamp:
+        # Our timestamp is below the first one.
+        return
+
+    # localtime and our timestamp is unlikely to line up
+    # Find a best match for our update
+    # binary search, but compare a and a+1,a-1 with our time.
+    while lo < hi:
+        mid = (lo + hi) / 2
+
+        if bucket_data[mid]['localtime'] < timestamp:
+            # are we inbetween mid and mid+1?
+            if bucket_data[mid+1]['localtime'] >= timestamp:
+
+                # Are we closest to mid or mid + 1?
+                z1 = abs(bucket_data[mid]['localtime'] - timestamp)
+                z2 = abs(bucket_data[mid+1]['localtime'] - timestamp)
+                if z1 <= z2:
+                    index = mid + 1
+                else:
+                    index = mid
+
+                bucket_data[index][event] += 1
+                break
+            lo = mid + 1
+        elif bucket_data[mid]['localtime'] > timestamp:
+            # are we inbetween mid and mid-1?
+            if bucket_data[mid-1]['localtime'] <= timestamp:
+
+                # Are we closest to mid or mid - 1?
+                z1 = abs(bucket_data[mid]['localtime'] - timestamp)
+                z2 = abs(bucket_data[mid-1]['localtime'] - timestamp)
+                if z1 <= z2:
+                    index = mid - 1
+                else:
+                    index = mid
+
+                bucket_data[index][event] += 1
+                break
+            hi = mid
+        # Might get lucky with a direct match...
+        elif bucket_data[mid]['localtime'] == timestamp:
+            bucket_data[mid][event] += 1
+            break
+
+def merge_events(bucket_stats, node_stats):
+        # bucket deleted, skip
+        #if bucket not in node_dictionary:
+         #   return
+
+    delete_list = []
+    for bucket in node_stats:
+        if bucket in bucket_stats:
+            for event in node_stats[bucket]:
+                # First one linear iteration to add our event with 0 hits.
+                # every time slice needs the stat and a count, even if 0.
+                # keys is the name of each bucket
+                for stats in bucket_stats[bucket]:
+                    stats[event] = 0
+        else:
+            # bucket not in bucket_stats, maybe an old bucket. Get rid
+            delete_list.append(bucket)
+
+    # Now pop all keys we can't process
+    for delete_key in delete_list:
+        node_stats.pop(delete_key)
+
+    # Now merge the node_events into the bucket stats
+    for bucket in node_stats:
+        for event in node_stats[bucket]:
+            for timestamp in node_stats[bucket][event]:
+                insert_stat(bucket_stats[bucket], event, timestamp)
