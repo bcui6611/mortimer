@@ -1,6 +1,8 @@
-import Queue
-from threading import Lock
-from threading import local
+#
+# Some global objects used between mortimer's objects.
+#
+
+messageq = {}
 
 versionnumber = 2.0
 
@@ -8,15 +10,8 @@ loading_file = False
 
 sessionData = {'smoothing-window': 0}
 
-q = Queue.Queue()
-
-messageq = {}
-
-threads = {}
-
-threadingDS = Lock()
-
-threadLocal = local()
+# We hang multi process related data/queues etc... off this dictionary
+processes = {}
 
 # It's a big map:
 #     {"filename"

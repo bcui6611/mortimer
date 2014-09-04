@@ -49,6 +49,7 @@ def parse_statqry(qstr):
 def create_pointseries(qstr):
     """ Called by multistat_response for each query.
         It returns the data associated with the individual query. """
+
     expr, contextDictionary = parse_statqry(qstr)
     # merge in sessionData to the contextDictionary
     contextDictionary = dict(
@@ -115,6 +116,7 @@ def multistat_response(queries):
             missing_data = True
 
     if missing_data:
+
         message = {'kind': 'warning', 'short': 'Missing data or parsing error', 'extra': ''}
         for k,v in globals.messageq.items():
             v.put(message)
@@ -179,6 +181,7 @@ def send_session(websocket):
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
+
     """ Class for callback handler to respond to Web Socket. """
     def open(self):
         logging.debug('New web socket connection opened.')
@@ -205,16 +208,35 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     def send_update(self):
         """ This function is called every 100ms and send a message if files are being loaded.
             Or there are any messages in the message queue. """
+
         if globals.loading_file:
             files_being_loaded = {}
-            for a, b in globals.threads.items():
-                files_being_loaded[a] = {
-                    'endsize': b['progress_end_size'], 'counted': [b['progress_so_far']]}
+            
+            for filename in globals.processes:
+                endsize = 0
+                progress = 0
+                # compute a progress for this file
+                for proc in globals.processes[filename]:
+                    try:
+                        progress_data = globals.processes[filename][proc]['progress_queue'].get_nowait()
+                    except Queue.Empty:
+                        progress_data = globals.processes[filename][proc]['cached_progress']
+
+                    endsize = endsize + progress_data['progress_end_size']
+                    progress = progress + progress_data['progress_so_far']
+
+                    # Stash progress in-case queue is empty
+                    globals.processes[filename][proc]['cached_progress'] = progress_data
+
+                # Now add files progress
+                files_being_loaded[filename] = {'endsize': endsize, 'counted': [progress]}
+            
             message = {'kind': 'status-update', 'data': {'files': [],
-                                                         'loading': files_being_loaded, 'buckets': []}}
+                                                         'loading': files_being_loaded,
+                                                         'buckets': []}}
             jsonmessage = json.dumps(message)
             self.write_message(jsonmessage)
-      
+
         try:
             while not globals.messageq[str(self)].empty():
                 message = globals.messageq[str(self)].get()

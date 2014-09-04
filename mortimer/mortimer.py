@@ -15,17 +15,22 @@ import time
 import datetime
 import calendar
 import string
-import Queue
 import sys
+import erlangParser
+import multiprocessing
+
+from Queue import Full
 
 from os import _exit
 from os import walk
 from io import TextIOWrapper
 
+import cProfile, pstats, StringIO
+
 import globals
 import grammar
 import web_server
-from node_events import node_events
+import node_events
 
 """ This is the top level file for running Mortimer2.  It is responsible for loading the data
     and starting the the web server.  The program relies on three other python files:-
@@ -52,6 +57,10 @@ def argumentParsing():
                         default=False, help='Load node events/errors (warning can slow down loading time)')
     parser.add_argument('--version',  action='store_true',
                         default=False, help='Prints out the version number of mortimer')
+
+    parser.add_argument('--erlang',  action='store_true',
+                        default=False, help='Load erlang stats (including XDCR), can slow down loading time.')
+
     return parser.parse_args()
 
 
@@ -79,7 +88,7 @@ def unzip(file):
         zfile.extract(name, dirname)
 
 
-def stats_kv(line, kvdictionary, epoch, localtimediff):
+def stats_kv(line, kvdictionary):
     matchObj = re.match(r'([^\s]+)\s+(.*)$', line, re.I)
     if matchObj:
         key = matchObj.group(1)
@@ -87,11 +96,6 @@ def stats_kv(line, kvdictionary, epoch, localtimediff):
         matchObj = re.match(r'[\-\d]+(.\d+)?$', value, re.I)
         if matchObj:
             value = num(value)
-            if key == 'time':
-                difference = value - epoch
-                # round the difference to nearest minute
-                difference = int(round(difference / 60.0)) * 60
-                value = value - difference - localtimediff
             kvdictionary[key] = value
 
 
@@ -109,16 +113,56 @@ def isStatsForBucket(line):
     else:
         return "", 0
 
+def isNsDoctorStats(line):
+    matchObj = re.match(r'^\[ns_doctor:debug,([^,]+),([^:]+):ns_doc.*$', line)
+    if matchObj:
+        dayandtime = matchObj.group(1)
+        node = matchObj.group(2)
+        formatteddayandtime = datetime.datetime.strptime(
+            dayandtime, '%Y-%m-%dT%H:%M:%S.%f')
+        epochtime = calendar.timegm(formatteddayandtime.timetuple())
+        return node, epochtime
+    else:
+        return "",0
 
-def watched_stream_setendsize(zipfile, entry_file, filename):
+# Lots of useful stuff in ns_doctor which isn't bucket related.
+def processNsDoctorStats(node, data, statsDictionary):
+    doctor_data = ""
+    bytes_read = 0
+    for line in data:
+        doctor_data = doctor_data + line
+        bytes_read+=len(line)
+        if line.endswith(">>}]}]\n"):
+            break
+
+    erl = erlangParser.parseErlangConfig(doctor_data)
+
+    # return a map of id -> stats_dictionary
+    return_map = dict()
+
+    if node in erl:
+        for task in erl[node]['local_tasks']:
+            if task['type'] == "xdcr":
+                idarray = task['id'].split('/')
+                task['uptime'] = erl[node]['wall_clock'] # Adding this K/V makes rate() work
+                return_map["xdcr_{}".format(idarray[-1])] = task
+
+    return return_map, bytes_read
+
+def watched_stream_getendsize(zipfile, entry_file, filename):
     endsize = zipfile.getinfo(entry_file).file_size
     logging.debug(entry_file + ' size of stat file= ' + str(endsize))
-    globals.threadingDS.acquire()
-    globals.threads[filename]['progress_end_size'] = endsize
-    globals.threadingDS.release()
+    return endsize
 
+def update_progress_so_far(progress_queue, bytes_total, bytes_read):
+    try:
+        # Try an update the queue, skip this update if full
+        progress_queue.put_nowait({'progress_end_size':bytes_total, 'progress_so_far': bytes_read})
+    except Full:
+        # Queue is small, this is fine.
+        pass
 
-def stats_parse(bucketDictionary, zipfile, stats_file, filename):
+def stats_parse(bucketDictionary, zipfile, stats_file, filename, progress_queue):
     try:
         data = zipfile.open(stats_file, 'rU')
     except KeyError:
@@ -126,18 +170,14 @@ def stats_parse(bucketDictionary, zipfile, stats_file, filename):
                       'See stats_parse(bucketDictionary, zipfile, stats_file, filename).')
         os._exit(1)
     else:
-        watched_stream_setendsize(zipfile, stats_file, filename)
+        current_bytes = 0
+        endsize = watched_stream_getendsize(zipfile, stats_file, filename)
+        update_progress_so_far(progress_queue, endsize, current_bytes)
         data = TextIOWrapper(data)
-        bucket = ''
+        bucket = None
         statsDictionary = dict()
         byte_count = 0
-        last_epoch = 0
-        # Calculate the mortimer web browser local time difference to UTC.
-        utctime = time.gmtime()
-        localtime = time.localtime()
-        diffseconds = calendar.timegm(localtime) - calendar.timegm(utctime)
-        # round the difference to nearest minute
-        localtimediff = int(round(diffseconds / 60.0)) * 60
+        t = time.clock()
         for line in data:
             byte_count += len(line)
             line = line.rstrip()
@@ -145,7 +185,6 @@ def stats_parse(bucketDictionary, zipfile, stats_file, filename):
                 (possibleBucket, epoch) = isStatsForBucket(line)
 
                 if epoch != 0:
-                    last_epoch = epoch
                     bucket = possibleBucket
                     statsDictionary = dict()
                     statsDictionary['localtime'] = epoch
@@ -154,19 +193,58 @@ def stats_parse(bucketDictionary, zipfile, stats_file, filename):
                         bucketDictionary[bucket] = []
                 else:
                     # Add to statsDictionary
-                    stats_kv(line, statsDictionary, last_epoch, localtimediff)
+                    stats_kv(line, statsDictionary)
             else:
                 # reached an empty line
-                globals.threadingDS.acquire()
-                globals.threads[filename]['progress_so_far'] += byte_count
-                globals.threadingDS.release()
+                current_bytes = current_bytes + byte_count
+                update_progress_so_far(progress_queue, endsize, current_bytes)
                 byte_count = 0
-                if bucket != '':
+                if bucket:
                     bucketDictionary.get(bucket).append(statsDictionary)
-                bucket = ''
+                bucket = None
+        process_time = time.clock() - t
+        update_progress_so_far(progress_queue, endsize, endsize)
+        print "{}: Processing of ns_server.stats took {} seconds".format(filename, process_time)
 
+def stats_parse_ns_doctor(bucketDictionary, zipfile, stats_file, filename, progress_queue):
+    try:
+        data = zipfile.open(stats_file, 'rU')
+    except KeyError:
+        logging.error('Error: Cannot find ns_server.stats.log in' + stats_file + \
+                      'See stats_parse(bucketDictionary, zipfile, stats_file, filename).')
+        os._exit(1)
+    else:
+        current_bytes = 0
+        scale = 4
+        # ns_doctor is slow, so scale the progress
+        endsize = watched_stream_getendsize(zipfile, stats_file, filename) * scale
+        update_progress_so_far(progress_queue, endsize, current_bytes)
+        data = TextIOWrapper(data)
+        t = time.clock()
+        for line in data:
+            (node, epoch) = isNsDoctorStats(line)
+            if epoch != 0:
+                statsDictionary = dict()
+                statsDictionary['localtime'] = epoch
+                (doctor_stats, bytes_read) = processNsDoctorStats(node, data, epoch)
 
-def load_collectinfo(filename, args):
+                # doctor_stats contains stats for each thing, the key being a thing like xdcr
+                # e.g. xdcr_XDCRName = {'latency':100, 'docs_sent':22}
+                for key in doctor_stats:
+                    if key not in bucketDictionary.keys():
+                        bucketDictionary[key] = []
+                    doctor_stats[key]['localtime'] = epoch
+
+                    bucketDictionary.get(key).append(doctor_stats[key])
+
+                current_bytes = current_bytes + (bytes_read * scale)
+                update_progress_so_far(progress_queue, endsize, current_bytes)
+
+        update_progress_so_far(progress_queue, endsize, endsize)
+        process_time = time.clock() - t
+        print "{}: Processing of ns_server.stats (ns_doctor) took {} seconds".format(filename, process_time)
+
+def load_collectinfo(filename, args, progress_queue, process_stats_queue):
     """Function to load the stats for one of the zip files.
        The function is invoked by each thread responsible for loading
         a zip file. """
@@ -189,18 +267,51 @@ def load_collectinfo(filename, args):
 
     logging.debug('stats_file= ' + stats_file)
     logging.debug('diag_file= ' + diag_file)
-    globals.threadLocal.stats = {}
-    globals.threadLocal.stats[filename] = dict()
 
+    bucketDictionary = {}
     # Get the stats for this zip files and place in thread local storage.
-    stats_parse(globals.threadLocal.stats.get(filename), file, stats_file, filename)
+    stats_parse(bucketDictionary, file, stats_file, filename, progress_queue)
 
-    if args.events:
-        globals.threadLocal.node_events = node_events()
-        globals.threadLocal.node_events.add_interesting_events(globals.threadLocal.stats.get(filename), file, filename)
+    # Return the dictionary to the main process
+    process_stats_queue.put(bucketDictionary)
 
-    # Add the thread local stats into the queue so can be collected by main thread.
-    globals.q.put(globals.threadLocal.stats)
+def load_erlangs_stats(filename, args, progress_queue, process_stats_queue):
+    """ Function to load the ns_doctor/erlang stats """
+    # First open the zipfle for reading.
+    file = zipfile.ZipFile(args.dir + '/' + filename, 'r')
+    stats_file = None
+    for name in file.namelist():
+        if re.match(r'.*/ns_server.stats.log', name, re.M | re.I):
+            stats_file = name
+
+    bucketDictionary = {}
+    stats_parse_ns_doctor(bucketDictionary, file, stats_file, filename, progress_queue)
+
+    # Return the dictionary to the main process
+    process_stats_queue.put(bucketDictionary)
+
+def load_node_events(filename, args, progress_queue, process_stats_queue):
+    """ Function to load the interesting node events """
+    # First open the zipfle for reading.
+    file = zipfile.ZipFile(args.dir + '/' + filename, 'r')
+    bucketDictionary = {}
+    node_events.NodeEvents(progress_queue).add_interesting_events(bucketDictionary, file, filename)
+
+    # Return the dictionary to the main process
+    process_stats_queue.put(bucketDictionary)
+
+def merge_stats(stats):
+    # Use 'ns_server' as the master and merge into it.
+
+    # node_events merges into ns_server data and needs a bin_search
+    rval = stats['ns_server.stats']['stats']
+    if 'node_events' in stats:
+        node_events.merge_events(stats['ns_server.stats']['stats'], stats['node_events']['stats'])
+
+    if 'ns_server.erlang_stats' in stats:
+        rval = dict(stats['ns_server.stats']['stats'].items() + stats['ns_server.erlang_stats']['stats'].items())
+
+    return rval
 
 def signal_handler(signal, frame):
     """ Signal handler for SIGINT to terminate all threads.   """
@@ -217,7 +328,7 @@ def signal_handler(signal, frame):
     5. Loading in all the stats files. """
 def main():
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Parse the arguments given.
     args = argumentParsing()
     if args.debug:
@@ -250,35 +361,62 @@ def main():
         fileList.extend(filenames)
         break
 
-    # Load the stats files using a separate thread per file
+    # process entry point map
+    process_entry_functions = {
+        'ns_server.stats':load_collectinfo
+    }
+
+    # Optional features (these can slow down loading)
+    if args.events:
+        process_entry_functions['node_events'] = load_node_events
+
+    if args.erlang:
+        process_entry_functions['ns_server.erlang_stats'] = load_erlangs_stats
+
+    globals.loading_file = True
+
+    # Load the stats files using python's multiprocessing
+    # One process per stat type per zipfile.
     for filename in fileList:
         root, ext = os.path.splitext(filename)
         if ext == '.zip':
             logging.debug(filename)
-            globals.threadingDS.acquire()
-            globals.threads[filename] = {
-                'thread': 0, 'progress_end_size': 0, 'progress_so_far': 0}
-            globals.threadingDS.release()
-            t = threading.Thread(
-                name='load_thread', target=load_collectinfo, args=(filename, args))
-            globals.threadingDS.acquire()
-            globals.threads[filename]['thread'] = t
-            globals.threadingDS.release()
-            globals.loading_file = True
-            t.start()
 
-    # Wait for all the files to be loaded
-    for a, b in globals.threads.items():
-        b['thread'].join()
+            # Create the process data structures
+            # - progress_queue is for sending messages about how far through the data crunching we are
+            # - process_return_queue is for returning the final dictionary
+            # - cached_progress is for the webserver, as we may always have a new progress to report 
+            #   we would report the last known progress.
+            globals.processes[filename] = {}
+            for k in process_entry_functions:
+                progress_queue = multiprocessing.Queue(1)
+                process_return_queue = multiprocessing.Queue(1)
+                process = multiprocessing.Process(target=process_entry_functions[k],
+                                args=(filename, args, progress_queue, process_return_queue))
+                globals.processes[filename][k] = {
+                    'process' : process,
+                    'progress_queue' : progress_queue,
+                    'return_queue' : process_return_queue,
+                    'cached_progress' : {'progress_end_size':1, 'progress_so_far':0}
+                }
 
-    # Merge each threads stat data into one global stats
-    while not globals.q.empty():
-        statmap = globals.q.get()
-        for k, v in statmap.items():
-            globals.stats[k] = v
+            # Start the processes
+            for k in globals.processes[filename]:
+                globals.processes[filename][k]['process'].start()
+
+    # For each file collect each sub-process return data
+    for filename in globals.processes:
+        for key in globals.processes[filename]:
+            globals.processes[filename][key]['stats'] = globals.processes[filename][key]['return_queue'].get()
+            globals.processes[filename][key]['process'].join()
+
+    # Now we need to merge stats into one super stats!
+    for filename in globals.processes:
+        globals.stats[filename] = merge_stats(globals.processes[filename])
 
     logging.debug('finished loading zip fles')
     globals.loading_file = False
+
     message = {'kind': 'status-update', 'data': {'files': web_server.list_files(), 'loading': {}, 'buckets': web_server.list_buckets()}}
     for k,v in globals.messageq.items():
         v.put(message)

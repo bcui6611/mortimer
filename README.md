@@ -31,7 +31,7 @@ If you decide not to use pypy, then python 2.7.x can be used.  On Mac (OSX) the 
 
 To run mortimer, simply type:-
 
-    ./mortimer
+    ./mortimer.sh
     
 If pypy is installed, mortimer will automatically use it, otherwise it will default to use the standard python intepreter.    
 
@@ -50,8 +50,47 @@ Each of these can be changed with command line flags.
       -d, --dir                  .        Directory to search for collectinfo .zips
       -v, --debug                false    Enable debugging messages
       -n, --browse               true     Auto open browser
-      -e, --diag                 Read diag.log (events). This is currently not supported
+      -e, --events               Read various node events from many places.
+      --erlang                   Read erlang stats from ns_server.stats
       --version                  Prints out the version number of mortimer
+
+### --erlang (XDCR stats)
+
+Note: This flag will slow down mortimer loading as there's a lot of data to process.
+
+The --erlang flag enables the loading of ns_doctor statistics which contain many useful items. Primarily latency data for XDCR.
+
+If the node logs do have XDCR enabled a new bucket will be created (look for buckets with an xdcr_ prefix). You can use these "buckets" to look at XDCR
+statistics.
+
+The following statistic exist (as of 2.5.1). Unfortunately the details behind these stats may need some erlang decryption.
+
+* changes_left
+* docs_checked
+* docs_written
+* docs_opt_repd
+* data_replicated
+* active_vbreps
+* waiting_vbreps
+* time_working
+* time_committing
+* num_checkpoints
+* num_failedckpts
+* docs_rep_queue
+* size_rep_queue
+* rate_replication
+* bandwidth_usage
+* meta_latency_aggr
+* meta_latency_wt
+* docs_latency_aggr
+* docs_latency_wt
+
+
+### -e, --events
+
+The -e, --events flag enables the loading of various node events, e.g. when memcached logs "Too many open connections", this becomes a statistic which can be graphed with other stats.
+
+See mortimer/node_events.py for the dictionary which drives which files and events are looked at and what keys they are added as.
 
 
 ## Keyboard Shortcuts
