@@ -9,7 +9,7 @@ setup(
     packages = ['mortimer'],
     scripts=[os.path.join('bin', 'mortimer')],
     include_package_data = True,
-    install_requires = ['tornado', 'lepl'],
+    install_requires = ['tornado', 'lepl', 'pyparsing'],
     license = 'Copyright 2014 Couchbase',
     url = 'https://github.com/couchbaselabs/mortimer',
     keywords = 'graphing analysis logs couchbase',
