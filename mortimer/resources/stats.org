@@ -898,8 +898,8 @@ each stat name.
 ** Memory Stats
 
 This provides various memory-related stats including the stats from tcmalloc.
-Note that tcmalloc stats are not available on some operating systems
-(e.g., Windows) that do not support tcmalloc.
+Note that tcmalloc stats are not available on some operating systems  
+that do not support tcmalloc.
 
 | mem_used (deprecated)               | Engine's total memory usage          |
 | bytes                               | Engine's total memory usage          |
