@@ -7,7 +7,7 @@ setup(
     version = '2.0.0',
     author_email = 'jim@couchbase.com',
     packages = ['mortimer'],
-    scripts=[os.path.join('bin', 'mortimer')],
+    scripts=[os.path.join('scripts', 'mortimer')],
     include_package_data = True,
     install_requires = ['tornado', 'lepl', 'pyparsing'],
     license = 'Copyright 2014 Couchbase',
