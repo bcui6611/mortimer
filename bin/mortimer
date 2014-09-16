@@ -1,5 +1,5 @@
 #!/bin/sh
-export MORTIMER="$(cd $(dirname "$0") && pwd)"
+export MORTIMER="$(cd $(dirname "$0")/.. && pwd)"
 
 # ~4x faster under pypy (if available)
 if hash pypy 2>/dev/null; then
