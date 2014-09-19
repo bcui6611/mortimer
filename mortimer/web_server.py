@@ -21,7 +21,7 @@ import re
 """ This file contains the functions associated with providing the web server functionality.
     When the web server recieves queries for a set of stat it invokes
     multistat_response which in turn invokes create_pointseries for each query.
-    
+
     The function create_pointseries invokes expr_eval_string, which is responsible for
     parsing the expression and returning the associated data.  See grammar.py for more
     details on this functionality. """
@@ -77,7 +77,7 @@ def multistat_response(queries):
     pointseriesmap = {}
     times = []
     pointseriestimes = []
-    
+
     # first get all the time points for all queries
     for q in queries:
         pointseries = create_pointseries(q)
@@ -211,7 +211,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         if globals.loading_file:
             files_being_loaded = {}
-            
+
             for filename in globals.processes:
                 endsize = 0
                 progress = 0
@@ -230,7 +230,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
                 # Now add files progress
                 files_being_loaded[filename] = {'endsize': endsize, 'counted': [progress]}
-            
+
             message = {'kind': 'status-update', 'data': {'files': [],
                                                          'loading': files_being_loaded,
                                                          'buckets': []}}
@@ -250,7 +250,7 @@ class MainHandler(tornado.web.RequestHandler):
     """ Class for callback handler to respond to root web page access. """
     def initialize(self, relativepath):
         self.relativepath = relativepath
-    
+
     def get(self):
         self.render(self.relativepath + '/resources/public/index.html')
 
