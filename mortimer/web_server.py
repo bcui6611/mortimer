@@ -2,6 +2,8 @@ import globals
 import grammar
 import stats_desc
 
+import os
+import signal
 import tornado.httpserver
 import tornado.websocket
 import tornado.ioloop
@@ -326,5 +328,10 @@ class WebServer (threading.Thread):
              {'path': self.relativepath + '/resources/public'})
         ])
         http_server = tornado.httpserver.HTTPServer(application)
-        http_server.listen(self.port)
+        try:
+            http_server.listen(self.port)
+        except Exception:
+             logging.error("Cannot bind to the socket. Is there another " +
+               "mortimer running? Terminating")
+             os.killpg(0, signal.SIGTERM)
         tornado.ioloop.IOLoop.instance().start()
