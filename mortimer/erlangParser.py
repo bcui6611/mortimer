@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
 
 from __future__ import print_function
+import logging
 import sys
 import time
 
@@ -104,9 +105,9 @@ def parseErlangConfig(string):
         config = convertToDict(config)
         return config
     except ParseException, err:
-        print(err.line, file=sys.stderr)
-        print(" "*(err.column-1) + "^", file=sys.stderr)
-        print(err, file=sys.stderr)
+        logging.error(err.line)
+        logging.error(" "*(err.column-1) + "^")
+        logging.error(err)
         raise
 
 def parseErlangValue(string):
@@ -115,9 +116,9 @@ def parseErlangValue(string):
         d = erlangValue.parseString(string)
         return convertToDict(d)
     except ParseException, err:
-        print(err.line, file=sys.stderr)
-        print(" "*(err.column-1) + "^", file=sys.stderr)
-        print(err, file=sys.stderr)
+        logging.error(err.line)
+        logging.error(" "*(err.column-1) + "^")
+        logging.error(err)
         raise
 
 
